@@ -10,3 +10,8 @@ TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled prot
 * processed movie (background subtracted & smoothed)
 * particle trajectories
 * diffusion coefficients & particle dwell times 
+
+
+**Updates**
+* 11/03/2020:
+  - generated code to convert ND2 to a TIF, for simplicity. Scaling looks to be a bit off compared to the original ND2, but for now it should suffice.
