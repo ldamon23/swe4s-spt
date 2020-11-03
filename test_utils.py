@@ -7,6 +7,7 @@ import utils
 import sys
 import matplotlib.pyplot as plt
 import tifffile
+from nd2reader import ND2Reader
 
 class TestUtils_utils(unittest.TestCase):
     """ Testing the functionality of functions in utils
@@ -51,7 +52,25 @@ class TestUtils_utils(unittest.TestCase):
         tif = tifffile.TiffFile('sample_SPT.tif')
         self.assertEqual(len(tif.pages),10)
         
-
+    def test_convert_ND2_write_all_frames(self):
+        # check that we can load all frames
         
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        frame_range = 'all'  # load all frames
+        
+        utils.convert_ND2(file_in, file_out, frame_range)
+
+        # verify that a file was created and that it has the specified number of frames
+        file = open(file_out)
+        self.assertIsNotNone(file)
+        file.close
+        
+        img = ND2Reader(file_in)
+        total_frames = (img.sizes['z'])
+        
+        tif = tifffile.TiffFile('sample_SPT.tif')
+        self.assertEqual(len(tif.pages),total_frames)
+
 if __name__ == '__main__':
     unittest.main()
