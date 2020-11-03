@@ -2,13 +2,18 @@
 """
 
 import sys
-import cv2
+import sys
 import numpy as np
 from nd2reader import ND2Reader
 import matplotlib.pyplot as plt
-from PIL import Image
-import imageio
+import tifffile
 
+# from PIL import Image
+# import sys
+# import numpy as np
+# from nd2reader import ND2Reader
+# import matplotlib.pyplot as plt
+# import tifffile
 
 def convert_ND2(file_in, file_out, frame_range):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -16,6 +21,7 @@ def convert_ND2(file_in, file_out, frame_range):
     Parameters:
     file_in     : ND2 image to be processed
     file_out    : Name of the output TIF
+    frame_range : Frame range to iterate over
     
     outputs:
     img_out    : converted TIF file
@@ -29,23 +35,19 @@ def convert_ND2(file_in, file_out, frame_range):
         sys.exit(1)
 
     img = ND2Reader(file_in)
-    img.iter_axes = 'z'
-    img_dimensions = img.sizes
-    xsize = img_dimensions['x']
-    ysize = img_dimensions['y']
-    tsize = img_dimensions['z']
-    final_img = np.zeros((ysize,xsize))
+    img.iter_axes = 'z' # t oddly does not work; z-steps instead
     
-    for i in frame_range:
-        print('Curr frame is: ' + str(i))
-        temp_img = np.asarray(img[i]) # take frame and store as np array
-        print(temp_img.shape)
-#         np.dstack(final_img, temp_img)
-        ### TO DO: figure out why my temp_img array is 1 px wider than what it should be
-        # I can't merge np arrays for the final save until this happens... FFFFF
+    for index, frame in enumerate(frame_range):
+        if index == 0:
+            print('Curr frame is: ' + str(frame))
+            output_img = np.array(img[frame])
+            tifffile.imwrite(file_out, output_img)
+        else:
+            print('Curr frame is: ' + str(frame))
+            output_img = np.array(img[frame])  # take frame and store as np array
+            tifffile.imwrite(file_out, output_img, append=True)
 
-    return final_img
-        
+    return output_img
 
 
     

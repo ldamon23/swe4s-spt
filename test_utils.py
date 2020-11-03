@@ -38,10 +38,13 @@ class TestUtils_utils(unittest.TestCase):
         
         file_in = 'sample_SPT.nd2'
         file_out = 'sample_SPT.tif'
-        frame_range = range(9) # load first 10 frames
+        frame_range = range(0,1197) # load first 10 frames
         
-        img = utils.convert_ND2(file_in, file_out, frame_range)
+        utils.convert_ND2(file_in, file_out, frame_range)
         
+        # verify that a file was created and that it has the specified number of frames
+        file = open('sample_SPT.tif')
+        self.assertIsNotNone(file)
 
         
 if __name__ == '__main__':
