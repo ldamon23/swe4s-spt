@@ -40,11 +40,11 @@ def convert_ND2(file_in, file_out, frame_range):
     for index, frame in enumerate(frame_range):
         if index == 0:
             print('Curr frame is: ' + str(frame))
-            output_img = np.array(img[frame])
+            output_img = np.array(img[frame], dtype='uint16')
             tifffile.imwrite(file_out, output_img)
         else:
             print('Curr frame is: ' + str(frame))
-            output_img = np.array(img[frame])  # take frame and store as np array
+            output_img = np.array(img[frame], dtype='uint16')  # take frame and store as np array
             tifffile.imwrite(file_out, output_img, append=True)
 
     return output_img

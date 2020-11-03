@@ -6,6 +6,7 @@ import unittest
 import utils
 import sys
 import matplotlib.pyplot as plt
+import tifffile
 
 class TestUtils_utils(unittest.TestCase):
     """ Testing the functionality of functions in utils
@@ -38,13 +39,18 @@ class TestUtils_utils(unittest.TestCase):
         
         file_in = 'sample_SPT.nd2'
         file_out = 'sample_SPT.tif'
-        frame_range = range(0,1197) # load first 10 frames
+        frame_range = range(0,10)  # load first 10 frames - note: indexing starts at 1
         
         utils.convert_ND2(file_in, file_out, frame_range)
         
         # verify that a file was created and that it has the specified number of frames
         file = open('sample_SPT.tif')
         self.assertIsNotNone(file)
+        file.close
+        
+        tif = tifffile.TiffFile('sample_SPT.tif')
+        self.assertEqual(len(tif.pages),10)
+        
 
         
 if __name__ == '__main__':
