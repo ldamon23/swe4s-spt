@@ -17,7 +17,7 @@ class TestUtils_utils(unittest.TestCase):
 
         file_in = 'crapFile.nd2'
         file_out = 'crapFile.tif'
-        frame_range = [0]
+        frame_range = [0] # load first frame, if possible
 
         with self.assertRaises(SystemExit) as ex:
            utils.convert_ND2(file_in, file_out, frame_range)
@@ -32,6 +32,16 @@ class TestUtils_utils(unittest.TestCase):
         img = utils.convert_ND2(file_in, file_out, frame_range)
         
         self.assertIsNotNone(img)
+
+    def test_convert_ND2_load_multiple_frames(self):
+        # check that we can load 2+ frames
+        
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        frame_range = range(9) # load first 10 frames
+        
+        img = utils.convert_ND2(file_in, file_out, frame_range)
+        
 
         
 if __name__ == '__main__':
