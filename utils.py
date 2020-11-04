@@ -47,7 +47,7 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def calc_diffusion(file_in, file_out, query_column, traj_ID, result_columns, deltaT=0.1):  # should change traj_ID to default to 'all' to ensure looping
+def calc_diffusion(file_in, file_out, query_column, traj_ID='all', result_columns, deltaT=0.1):  # should change traj_ID to default to 'all' to ensure looping
     
     # check that the file exists
     try:
@@ -56,9 +56,55 @@ def calc_diffusion(file_in, file_out, query_column, traj_ID, result_columns, del
         print("Could not find file " + file_in)
         sys.exit(1)
     
-    dataOut = []  # intialize empty list of lists for storage
-    header = None
+    # determine trajectories to analyze; defaults to 'all'
+    
+    if traj_ID == 'all':
+        all_trajs = []  # initialize empty list for trajs
+        header = None
 
+        for line in traj_file:
+            if header is None:
+                header = line
+                continue
+            currLine = line.rstrip().split(',')
+            all_trajs.append(int(currLine[query_column]))
+
+        # convert to np array to use unique function
+        all_trajs = np.array(all_trajs)
+        all_trajs_unique = np.unique(all_trajs)
+        
+        # initialize empty list for storage of data (diffusion coeffs)
+        dataOut = []
+        header = None
+        
+        ## TO DO: EDIT THIS CODE BLOCK
+#         for traj in all_trajs_unique:
+#             for line in traj_file:
+#                 if header is None:
+#                     header = line
+#                     continue
+#                 currLine = line.rstrip().split(',')
+#                 try:
+#                     if currLine[query_column] == str(traj_ID):
+#                         data = []
+#                         for j in result_columns:
+#                             data.append(currLine[j])
+#                         dataOut.append(data)
+#                 except IndexError:
+#                     print("Asking for query column "
+#                           + str(query_column)
+#                           + " and results column "
+#                           + str(result_columns)
+#                           + ", but there are only "
+#                           + str(len(currLine))
+#                           + " fields")
+#                 except ValueError:
+#                     print('test')
+        
+    
+    
+    dataOut = []  # intialize empty list for storage
+    header = None
     
     for line in traj_file:
         if header is None:
