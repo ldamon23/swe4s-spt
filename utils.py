@@ -59,9 +59,10 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
     # begin analyzing trajectories
     
     header = None
+    diffusion_coeffs = []  # initialize empty list to store diffusion coeffs
 
     if traj_ID == 'all':
-        all_trajs = []  # initialize empty list for trajectories
+        all_trajs = []  # initialize empty list for trajectory IDs
 
         # for loop to pull out all trajectory IDs
         for line in traj_file:
@@ -76,7 +77,8 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
         all_trajs_unique = np.unique(all_trajs)  # yields only unique traj IDs
 
         dataOut = []
-        for traj in range(len(all_trajs_unique)):
+#         for traj in range(len(all_trajs_unique)):
+        for traj in np.nditer(all_trajs_unique):
             traj_file.seek(0)  # reset file to the beginning! otherwise won't loop back
             for line in traj_file:
                 if header is None:
@@ -88,6 +90,45 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
                     for j in result_columns:
                         data.append(currLine[j])
                     dataOut.append(data)
+        
+            # calculate mean squared displacement(MSD) for each trajectory:
+
+            # assuming 2D Brownian diffusion, we can simplify the equation to be:
+            # MSD = 4*D*deltaT
+            # where D is the diffusion coeff and deltaT is the time delay between frames
+
+            # first, transform dataOut to numpy array to make it easier to index (at least for me)
+            # I have a feeling this is a messy way to do it; so I'm open to suggestions on cleaning up!
+
+            dataOut2 = np.array(dataOut)
+            xdata = []
+            ydata = []
+            for i in range(len(dataOut2)):
+                xdata.append(float(dataOut2[i,0]))
+            for i in range(len(dataOut2)):
+                ydata.append(float(dataOut2[i,1]))
+
+            # convert back to np array (can't do below math on a list)
+            xdata = np.array(xdata)/1000  # converting from nm to um (convention)
+            ydata = np.array(ydata)/1000  # converting from nm to um (convention)
+            # now, calculate the displacements
+            r = np.sqrt(xdata**2 + ydata**2)
+            diff = np.diff(r) #this calculates r(t + dt) - r(t)
+            diff_sq = diff**2
+            MSD = np.mean(diff_sq)
+
+            # diffusion can now be computed
+            # note: this is just the "average" diffusion throughout the length of the track
+            # as we're assuming it's Brownian motion (for simplicity). A better way would be to fit
+            # to a specific model of diffusion (anomolous/constrained, for instance).. 
+            # but for now, simplicity rules
+            traj_diff = (MSD)/(4 * deltaT)  # final trajectory diffusion
+
+            # append traj ID and diffusion coeff to final list
+            temp = [int(traj), traj_diff]
+            diffusion_coeffs.append(temp)
+            
+
     else:
         # analyze a single trajectory
         dataOut = []
@@ -102,40 +143,30 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
                     data.append(currLine[j])
                 dataOut.append(data)
     
-    # calculate mean squared displacement(MSD) for a single trajectory
-    # assuming 2D Brownian diffusion, we can simplify the equation to be:
-    # MSD = 4*D*deltaT
-    # where D is the diffusion coeff and deltaT is the time delay between frames
+        # calculate mean squared displacement(MSD) for a single trajectory
+        # all equations / workflow are the same as above
 
-    # first, transform dataOut to numpy array to make it easier to index (at least for me)
-    # I have a feeling this is a messy way to do it; so I'm open to suggestions on cleaning up!
+        dataOut2 = np.array(dataOut)
+        xdata = []
+        ydata = []
+        for i in range(len(dataOut2)):
+            xdata.append(float(dataOut2[i,0]))
+        for i in range(len(dataOut2)):
+            ydata.append(float(dataOut2[i,1]))
 
-    dataOut2 = np.array(dataOut)
-    xdata = []
-    ydata = []
-    for i in range(len(dataOut2)):
-        xdata.append(float(dataOut2[i,0]))
-    for i in range(len(dataOut2)):
-        ydata.append(float(dataOut2[i,1]))
+        # convert back to np array (can't do below math on a list)
+        xdata = np.array(xdata)/1000  # converting from nm to um (convention)
+        ydata = np.array(ydata)/1000  # converting from nm to um (convention)
+        # now, calculate the displacements
+        r = np.sqrt(xdata**2 + ydata**2)
+        diff = np.diff(r) #this calculates r(t + dt) - r(t)
+        diff_sq = diff**2
+        MSD = np.mean(diff_sq)
 
-    # convert back to np array (can't do below math on a list)
-    xdata = np.array(xdata)/1000  # converting from nm to um (convention)
-    ydata = np.array(ydata)/1000  # converting from nm to um (convention)
-    # now, calculate the displacements
-    r = np.sqrt(xdata**2 + ydata**2)
-    diff = np.diff(r) #this calculates r(t + dt) - r(t)
-    diff_sq = diff**2
-    MSD = np.mean(diff_sq)
-
-    # diffusion can now be computed
-    # note: this is just the "average" diffusion throughout the length of the track
-    # as we're assuming it's Brownian motion (for simplicity). A better way would be to fit
-    # to a specific model of diffusion (anomolous/constrained, for instance).. 
-    # but for now, simplicity rules
-    deltaT = 0.1  # seconds
-    diffusion = (MSD)/(4 * deltaT)
+        # diffusion can now be computed
+        diffusion_coeffs = (MSD)/(4 * deltaT)
 
     traj_file.close()
 
-    return dataOut, diffusion
+    return dataOut, diffusion_coeffs
     

@@ -137,7 +137,7 @@ class TestUtils_calc_diffusion(unittest.TestCase):
 
         traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
         
-        print(diffusion)
+        self.assertEqual(len(diffusion),4)
 
 if __name__ == '__main__':
     unittest.main()
