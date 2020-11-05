@@ -47,7 +47,7 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def calc_diffusion(file_in, file_out, query_column, traj_ID='all', result_columns, deltaT=0.1):  # should change traj_ID to default to 'all' to ensure looping
+def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all', deltaT=0.1):  # should change traj_ID to default to 'all' to ensure looping
     
     # check that the file exists
     try:
@@ -56,12 +56,14 @@ def calc_diffusion(file_in, file_out, query_column, traj_ID='all', result_column
         print("Could not find file " + file_in)
         sys.exit(1)
     
-    # determine trajectories to analyze; defaults to 'all'
+    # begin analyzing trajectories
     
-    if traj_ID == 'all':
-        all_trajs = []  # initialize empty list for trajs
-        header = None
+    header = None
 
+    if traj_ID == 'all':
+        all_trajs = []  # initialize empty list for trajectories
+
+        # for loop to pull out all trajectory IDs
         for line in traj_file:
             if header is None:
                 header = line
@@ -71,62 +73,34 @@ def calc_diffusion(file_in, file_out, query_column, traj_ID='all', result_column
 
         # convert to np array to use unique function
         all_trajs = np.array(all_trajs)
-        all_trajs_unique = np.unique(all_trajs)
-        
-        # initialize empty list for storage of data (diffusion coeffs)
+        all_trajs_unique = np.unique(all_trajs)  # yields only unique traj IDs
+
         dataOut = []
-        header = None
-        
-        ## TO DO: EDIT THIS CODE BLOCK
-#         for traj in all_trajs_unique:
-#             for line in traj_file:
-#                 if header is None:
-#                     header = line
-#                     continue
-#                 currLine = line.rstrip().split(',')
-#                 try:
-#                     if currLine[query_column] == str(traj_ID):
-#                         data = []
-#                         for j in result_columns:
-#                             data.append(currLine[j])
-#                         dataOut.append(data)
-#                 except IndexError:
-#                     print("Asking for query column "
-#                           + str(query_column)
-#                           + " and results column "
-#                           + str(result_columns)
-#                           + ", but there are only "
-#                           + str(len(currLine))
-#                           + " fields")
-#                 except ValueError:
-#                     print('test')
-        
-    
-    
-    dataOut = []  # intialize empty list for storage
-    header = None
-    
-    for line in traj_file:
-        if header is None:
-            header = line
-            continue
-        currLine = line.rstrip().split(',')
-        try:
+        for traj in range(len(all_trajs_unique)):
+            traj_file.seek(0)  # reset file to the beginning! otherwise won't loop back
+            for line in traj_file:
+                if header is None:
+                    header = line
+                    continue
+                currLine = line.rstrip().split(',')
+                if currLine[query_column] == str(traj):
+                    data = []
+                    for j in result_columns:
+                        data.append(currLine[j])
+                    dataOut.append(data)
+    else:
+        # analyze a single trajectory
+        dataOut = []
+        for line in traj_file:
+            if header is None:
+                header = line
+                continue
+            currLine = line.rstrip().split(',')
             if currLine[query_column] == str(traj_ID):
                 data = []
                 for j in result_columns:
                     data.append(currLine[j])
                 dataOut.append(data)
-        except IndexError:
-            print("Asking for query column "
-                  + str(query_column)
-                  + " and results column "
-                  + str(result_columns)
-                  + ", but there are only "
-                  + str(len(currLine))
-                  + " fields")
-        except ValueError:
-            print('test')
     
     # calculate mean squared displacement(MSD) for a single trajectory
     # assuming 2D Brownian diffusion, we can simplify the equation to be:

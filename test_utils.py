@@ -99,8 +99,9 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         traj_ID = 1
         query_column = 1
         result_columns = [3, 4]
+        deltaT = 0.1  # exposure time, in seconds
 
-        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, traj_ID, result_columns, deltaT=0.1)
+        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
         
         expected = [['170.202', '22.481'], 
                     ['169.726', '22.459'], 
@@ -109,7 +110,7 @@ class TestUtils_calc_diffusion(unittest.TestCase):
 
         self.assertEqual(traj_xy, expected)
     
-    def test_calc_diffusion_get_diffusion(self):
+    def test_calc_diffusion_get_diffusion_single_traj(self):
         # compute the diffusion coefficient for a trajectory
         
         file_in = 'sample_traj.csv'  # I'm assuming I'll have a CSV, similar to mosaic
@@ -117,9 +118,26 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         traj_ID = 1
         query_column = 1
         result_columns = [3, 4]
+        deltaT = 0.1  # exposure time, in seconds
 
-        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, traj_ID, result_columns, deltaT=0.1)
+        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
         
-        self.assertIsNotNone(diffusion)  # not sure what a better test would be for this...
+        self.assertIsNotNone(diffusion)
+        # not sure what a better test would be for this...
+
+    def test_calc_diffusion_look_at_all_tracks(self):
+        # compute the diffusion coefficients for all trajectories
+
+        file_in = 'sample_traj_crop.csv'  # cropped file to minimize runtime
+        file_out = file_in[:-4] + '_diffusion_coeffs.csv'
+        traj_ID = 'all'
+        query_column = 1
+        result_columns = [3, 4]
+        deltaT = 0.1  # exposure time, in seconds
+
+        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
+        
+        print(diffusion)
+
 if __name__ == '__main__':
     unittest.main()
