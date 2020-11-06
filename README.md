@@ -13,5 +13,9 @@ TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled prot
 
 
 **Updates**
+
+* 11/05/2020:
+- updated `utils` to reflect changes to calc_diffusion(), with associated testing in `test_utils.py`
+- added shell script (`run.sh`) for processing ND2 files (conversion to TIF) and calculating some diffusion coefficients
 * 11/03/2020:
   - generated code to convert ND2 to a TIF, for simplicity. Scaling looks to be a bit off compared to the original ND2, but for now it should suffice.
