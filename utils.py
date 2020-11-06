@@ -11,6 +11,10 @@ import tifffile
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
     
+    ND2 is Nikon's proprietary image format. Most image/plotting packages
+    can't read the data, so we need to have a function written to convert these
+    to a TIF file
+    
     Parameters:
     file_in     : ND2 image to be processed
     file_out    : Name of the output TIF
@@ -27,8 +31,9 @@ def convert_ND2(file_in, file_out, frame_range='all'):
         print("Could not find file " + file_in)
         sys.exit(1)
 
+    # read the image into memory; this generates an img object
     img = ND2Reader(file_in)
-    img.iter_axes = 'z' # t oddly does not work; z-steps instead
+    img.iter_axes = 'z' # t (time) oddly does not work; z-steps instead
     
     # handle cases where we want to process all frames
     if frame_range == 'all':
@@ -47,7 +52,24 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all', deltaT=0.1):  # should change traj_ID to default to 'all' to ensure looping
+def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all', deltaT=0.1):
+    """ Calculate diffusion coefficients of particles
+    
+    Parameters:
+    file_in          : trajectory file to process
+    file_out         : file to save (NOTE: currently unused; later version will save to csv)
+    query_column     : column containing the trajectory IDS
+    result_columns   : columns containing the X and Y coordinates, respectively
+    traj_ID          : trajectories to analyze. By default, all are analyzed
+    delta_T          : exposure time, in seconds. By default, deltaT=0.1
+    
+    Outputs:
+    dataOut          : X & Y coordinates of the particle for each frame it exists
+                       Note: This is likely unnecessary & may bog down processing; will likely
+                       edit to remove later
+    diffusion_coeffs : A list of lists containing the trajectory ID and its diffusion coefficient
+    
+    """
     
     # check that the file exists
     try:
@@ -77,7 +99,6 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
         all_trajs_unique = np.unique(all_trajs)  # yields only unique traj IDs
 
         dataOut = []
-#         for traj in range(len(all_trajs_unique)):
         for traj in np.nditer(all_trajs_unique):
             traj_file.seek(0)  # reset file to the beginning! otherwise won't loop back
             for line in traj_file:
