@@ -68,7 +68,7 @@ class TestUtils_utils(unittest.TestCase):
         # that it has the specified number of frames
         file = open(file_out)
         self.assertIsNotNone(file)
-        file.close
+        file.close()
 
         img = ND2Reader(file_in)
         total_frames = (img.sizes['z'])
@@ -80,9 +80,14 @@ class TestUtils_utils(unittest.TestCase):
         # check that process image isn't throwing any errors
 
         file_in = 'sample_SPT.tif'
+        file_out = 'out/9.png'
         result = None
         result = utils.process_image(file_in)
         self.assertIsNotNone(result)
+
+        file = open(file_out)
+        self.assertIsNotNone(file)
+        file.close()
 
 
 if __name__ == '__main__':
