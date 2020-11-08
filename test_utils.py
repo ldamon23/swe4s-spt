@@ -93,7 +93,7 @@ class TestUtils_process_image(unittest.TestCase):
             os.mkdir('out/')
         except FileExistsError:
             pass
-        result = utils.process_image(file_in, blurIter=5, subBg=False)
+        result = utils.process_image(file_in, blurIter=2, subBg=False)
         self.assertIsNotNone(result)
 
         file = open(file_out)
