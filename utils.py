@@ -20,8 +20,7 @@ import matplotlib.pyplot as plt
 import tifffile
 from tifffile import *
 from skimage import io
-import pims
-
+from PIL import Image
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -89,26 +88,45 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True)
     results = []
     if tif_stack:
         try:
-            with pims.TiffStack(file_name) as images:
-                for i in range(len(images)):
-                    img = images[i]
-                    if gBlur:
-                        img = cv.GaussianBlur(img, (5, 5), blurIter)
-                    if subBg:
-                        backSub = cv.createBackgroundSubtractorKNN()
-                        img = backSub.apply(img)
-                    print('.', end='')
-                    results.append(img)
+            images = read_tif(file_name)
+            print(images)
+            for i in range(len(images)):
+                img = images[i]
+                if gBlur:
+                    img = cv.GaussianBlur(img, (5, 5), blurIter)
+                if subBg:
+                    img = subtract_background(img)
+                print('.', end='')
+                results.append(img)
         except FileNotFoundError:
             print("Could not find file " + file_name)
             sys.exit(1)
+        finally:
+            with TiffWriter('out/result.tif') as tif:
+                for frame in results:
+                    tif.save(frame, contiguous=True)
     else:
         print('Only tif stacks are supported currently')
         sys.exit(1)
-    with TiffWriter('out/result.tif') as tif:
-        for frame in results:
-            tif.save(frame, contiguous=True)
+
     return results
+
+def read_tif(path):
+    """
+    path - Path to the multipage-tiff file
+    """
+    img = Image.open(path)
+    images = []
+    for i in range(img.n_frames):
+        img.seek(i)
+        images.append(np.array(img))
+    return np.array(images)
+
+
+def subtract_background(img):
+    backSub = cv.createBackgroundSubtractorMOG2()
+    img = backSub.apply(img)
+    return img
 
 
 def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all', deltaT=0.1):
