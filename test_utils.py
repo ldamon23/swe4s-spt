@@ -16,66 +16,66 @@ class TestUtils_convert_ND2(unittest.TestCase):
 
     """
 
-#     def test_convert_ND2_missingfile(self):
-#         # check for missing file, throw an error
+    def test_convert_ND2_missingfile(self):
+        # check for missing file, throw an error
 
-#         file_in = 'crapFile.nd2'
-#         file_out = 'crapFile.tif'
-#         frame_range = [0]  # load first frame, if possible
+        file_in = 'crapFile.nd2'
+        file_out = 'crapFile.tif'
+        frame_range = [0]  # load first frame, if possible
 
-#         with self.assertRaises(SystemExit) as ex:
-#             utils.convert_ND2(file_in, file_out, frame_range)
-#         self.assertEqual(ex.exception.code, 1)
+        with self.assertRaises(SystemExit) as ex:
+            utils.convert_ND2(file_in, file_out, frame_range)
+        self.assertEqual(ex.exception.code, 1)
 
-#     def test_convert_ND2_disp_first_frame(self):
-#         # check that we can load at minimum one frame
+    def test_convert_ND2_disp_first_frame(self):
+        # check that we can load at minimum one frame
 
-#         file_in = 'sample_SPT.nd2'
-#         file_out = 'sample_SPT.tif'
-#         frame_range = [0]
-#         img = utils.convert_ND2(file_in, file_out, frame_range)
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        frame_range = [0]
+        img = utils.convert_ND2(file_in, file_out, frame_range)
 
-#         self.assertIsNotNone(img)
+        self.assertIsNotNone(img)
 
-#     def test_convert_ND2_load_multiple_frames(self):
-#         # check that we can load 2+ frames
+    def test_convert_ND2_load_multiple_frames(self):
+        # check that we can load 2+ frames
 
-#         file_in = 'sample_SPT.nd2'
-#         file_out = 'sample_SPT.tif'
-#         # load first 10 frames - note: indexing starts at 1
-#         frame_range = range(0, 10)
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        # load first 10 frames - note: indexing starts at 1
+        frame_range = range(0, 10)
 
-#         utils.convert_ND2(file_in, file_out, frame_range)
+        utils.convert_ND2(file_in, file_out, frame_range)
 
-#         # verify that a file was created and
-#         # that it has the specified number of frames
-#         file = open('sample_SPT.tif')
-#         self.assertIsNotNone(file)
-#         file.close
+        # verify that a file was created and
+        # that it has the specified number of frames
+        file = open('sample_SPT.tif')
+        self.assertIsNotNone(file)
+        file.close
 
-#         tif = tifffile.TiffFile('sample_SPT.tif')
-#         self.assertEqual(len(tif.pages), 10)
+        tif = tifffile.TiffFile('sample_SPT.tif')
+        self.assertEqual(len(tif.pages), 10)
 
-#     def test_convert_ND2_write_all_frames(self):
-#         # check that we can load all frames
+    def test_convert_ND2_write_all_frames(self):
+        # check that we can load all frames
 
-#         file_in = 'sample_SPT.nd2'
-#         file_out = 'sample_SPT.tif'
-#         frame_range = 'all'  # load all frames
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        frame_range = 'all'  # load all frames
 
-#         utils.convert_ND2(file_in, file_out, frame_range)
+        utils.convert_ND2(file_in, file_out, frame_range)
 
-#         # verify that a file was created and
-#         # that it has the specified number of frames
-#         file = open(file_out)
-#         self.assertIsNotNone(file)
-#         file.close()
+        # verify that a file was created and
+        # that it has the specified number of frames
+        file = open(file_out)
+        self.assertIsNotNone(file)
+        file.close()
 
-#         img = ND2Reader(file_in)
-#         total_frames = (img.sizes['z'])
+        img = ND2Reader(file_in)
+        total_frames = (img.sizes['z'])
 
-#         tif = tifffile.TiffFile('sample_SPT.tif')
-#         self.assertEqual(len(tif.pages), total_frames)
+        tif = tifffile.TiffFile('sample_SPT.tif')
+        self.assertEqual(len(tif.pages), total_frames)
 
     def test_process_image(self):
         # check that process image is taking in a tif stack and
@@ -111,7 +111,7 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         results_columns = [3, 4]
 
         with self.assertRaises(SystemExit) as ex:
-           utils.calc_diffusion(file_in, file_out, query_column, traj_ID, results_columns)
+            utils.calc_diffusion(file_in, file_out, query_column, traj_ID, results_columns)
         self.assertEqual(ex.exception.code, 1)
         
     def test_calc_diffusion_look_at_single_traj(self):
