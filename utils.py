@@ -72,7 +72,7 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True):
+def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True, detectEdges=True):
     '''Use image analysis algorithms to extract features from an image
 
     Parameters:
@@ -89,13 +89,15 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True)
     if tif_stack:
         try:
             images = read_tif(file_name)
-            print(images)
             for i in range(len(images)):
                 img = images[i]
                 if gBlur:
                     img = cv.GaussianBlur(img, (5, 5), blurIter)
                 if subBg:
                     img = subtract_background(img)
+                if detectEdges:
+                    img = cv.Laplacian(img, cv.CV_64F)
+                    img = np.uint16(np.absolute(img))
                 print('.', end='')
                 results.append(img)
         except FileNotFoundError:
@@ -124,6 +126,9 @@ def read_tif(path):
 
 
 def subtract_background(img):
+    '''
+    uses image analysis algorithms to subtract background from frames
+    '''
     backSub = cv.createBackgroundSubtractorMOG2()
     img = backSub.apply(img)
     return img

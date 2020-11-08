@@ -77,6 +77,11 @@ class TestUtils_convert_ND2(unittest.TestCase):
         tif = tifffile.TiffFile('sample_SPT.tif')
         self.assertEqual(len(tif.pages), total_frames)
 
+
+class TestUtils_process_image(unittest.TestCase):
+    '''
+    Tests for the functionality of image processing
+    '''
     def test_process_image(self):
         # check that process image is taking in a tif stack and
         # then processing that tif stack
@@ -88,7 +93,7 @@ class TestUtils_convert_ND2(unittest.TestCase):
             os.mkdir('out/')
         except FileExistsError:
             pass
-        result = utils.process_image(file_in, subBg=False)
+        result = utils.process_image(file_in, blurIter=2, subBg=False)
         self.assertIsNotNone(result)
 
         file = open(file_out)
