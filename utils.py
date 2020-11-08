@@ -7,12 +7,18 @@ try:
     import cv2 as cv
 except ModuleNotFoundError:
     subprocess.check_call([sys.executable, "-m",
-                           "pip", "install", 'opencv-python'])
+                           "pip", "install", 'opencv-contrib-python'])
     import cv2 as cv
 import numpy as np
-from nd2reader import ND2Reader
+try:
+    from nd2reader import ND2Reader
+except ModuleNotFoundError:
+    subprocess.check_call([sys.executable, "-m",
+                           "pip", "install", 'nd2reader'])
+    from nd2reader import ND2Reader
 import matplotlib.pyplot as plt
 import tifffile
+from tifffile import *
 from skimage import io
 import pims
 
@@ -67,7 +73,7 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True):
+def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True):
     '''Use image analysis algorithms to extract features from an image
 
     Parameters:
@@ -88,7 +94,10 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True):
                     img = images[i]
                     if gBlur:
                         img = cv.GaussianBlur(img, (5, 5), blurIter)
-                    cv.imwrite('out/' + str(i) + '.png', img)
+                    if subBg:
+                        backSub = cv.createBackgroundSubtractorKNN()
+                        img = backSub.apply(img)
+                    print('.', end='')
                     results.append(img)
         except FileNotFoundError:
             print("Could not find file " + file_name)
@@ -96,7 +105,9 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True):
     else:
         print('Only tif stacks are supported currently')
         sys.exit(1)
-
+    with TiffWriter('out/result.tif') as tif:
+        for frame in results:
+            tif.save(frame, contiguous=True)
     return results
 
 

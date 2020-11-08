@@ -7,6 +7,7 @@ import utils
 import sys
 import matplotlib.pyplot as plt
 import tifffile
+import os
 from nd2reader import ND2Reader
 
 
@@ -77,12 +78,17 @@ class TestUtils_convert_ND2(unittest.TestCase):
         self.assertEqual(len(tif.pages), total_frames)
 
     def test_process_image(self):
-        # check that process image isn't throwing any errors
+        # check that process image is taking in a tif stack and
+        # then processing that tif stack
 
         file_in = 'sample_SPT.tif'
-        file_out = 'out/9.png'
+        file_out = 'out/result.tif'
         result = None
-        result = utils.process_image(file_in)
+        try:
+            os.mkdir('out/')
+        except FileExistsError:
+            pass
+        result = utils.process_image(file_in, subBg=False)
         self.assertIsNotNone(result)
 
         file = open(file_out)
@@ -105,7 +111,7 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         results_columns = [3, 4]
 
         with self.assertRaises(SystemExit) as ex:
-           utils.calc_diffusion(file_in, file_out, query_column, traj_ID, results_columns)
+            utils.calc_diffusion(file_in, file_out, query_column, traj_ID, results_columns)
         self.assertEqual(ex.exception.code, 1)
         
     def test_calc_diffusion_look_at_single_traj(self):
