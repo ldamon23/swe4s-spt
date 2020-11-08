@@ -88,7 +88,7 @@ class TestUtils_convert_ND2(unittest.TestCase):
             os.mkdir('out/')
         except FileExistsError:
             pass
-        result = utils.process_image(file_in, subBg=False)
+        result = utils.process_image(file_in, blurIter=5, subBg=False)
         self.assertIsNotNone(result)
 
         file = open(file_out)
