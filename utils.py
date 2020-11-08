@@ -21,10 +21,11 @@ import tifffile
 from tifffile import *
 from skimage import io
 from PIL import Image
+import csv
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
-    
+
     ND2 is Nikon's proprietary image format. Most image/plotting packages
     can't read the data, so we need to have a function written to convert these
     to a TIF file
@@ -45,10 +46,9 @@ def convert_ND2(file_in, file_out, frame_range='all'):
         print("Could not find file " + file_in)
         sys.exit(1)
 
-
     # read the image into memory; this generates an img object
     img = ND2Reader(file_in)
-    img.iter_axes = 'z' # t (time) oddly does not work; z-steps instead
+    img.iter_axes = 'z'  # t (time) oddly does not work; z-steps instead
 
     # handle cases where we want to process all frames
     if frame_range == 'all':
@@ -72,7 +72,8 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True, detectEdges=True):
+def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True,
+                  subBg=True, detectEdges=True):
     '''Use image analysis algorithms to extract features from an image
 
     Parameters:
@@ -113,6 +114,30 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True, subBg=True,
 
     return results
 
+
+def detect_features(data):
+    '''
+    data - list of frames to process should be numpy arrays
+
+    returns an array of arrays that each contain
+                (frame id, feature position(x, y), feature size)
+    '''
+    if data is None:
+        print('No data passed to detect features.')
+        sys.exit(1)
+    results = None
+    detector = cv.SimpleBlobDetector()
+    i = 0
+    for frame in data:
+        # Detect blobs.
+        keypoints = detector.detect(frame)
+        for kp in keypoints:
+            results.append([i, (kp.x, kp.y), kp.size])
+        i = i + 1
+    
+    return results
+
+
 def read_tif(path):
     """
     path - Path to the multipage-tiff file
@@ -125,6 +150,22 @@ def read_tif(path):
     return np.array(images)
 
 
+def write_csv(data, file_name='out/result.csv'):
+    '''
+    data - list of arrays containing row values
+    file_name - default: 'out/result.csv' output file name
+    
+    writes a csv with given file name and data
+    '''
+    with open(file_name, mode='w') as csv_file:
+        try:
+            for row in data:
+                csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                csv_file.writerow(row)
+        except FileNotFoundError:
+            print('Could not open subdirectory \'out\'')
+            sys.exit(1)
+
 def subtract_background(img):
     '''
     uses image analysis algorithms to subtract background from frames
@@ -134,9 +175,10 @@ def subtract_background(img):
     return img
 
 
-def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all', deltaT=0.1):
+def calc_diffusion(file_in, file_out, query_column,
+                   result_columns, traj_ID='all', deltaT=0.1):
     """ Calculate diffusion coefficients of particles
-    
+
     Parameters:
     file_in          : trajectory file to process
     file_out         : file to save (NOTE: currently unused; later version will save to csv)
@@ -144,24 +186,24 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
     result_columns   : columns containing the X and Y coordinates, respectively
     traj_ID          : trajectories to analyze. By default, all are analyzed
     delta_T          : exposure time, in seconds. By default, deltaT=0.1
-    
+
     Outputs:
     dataOut          : X & Y coordinates of the particle for each frame it exists
                        Note: This is likely unnecessary & may bog down processing; will likely
                        edit to remove later
     diffusion_coeffs : A list of lists containing the trajectory ID and its diffusion coefficient
-    
+
     """
-    
+
     # check that the file exists
     try:
         traj_file = open(file_in, 'r') # open file with traj info
     except:
         print("Could not find file " + file_in)
         sys.exit(1)
-    
+
     # begin analyzing trajectories
-    
+
     header = None
     diffusion_coeffs = []  # initialize empty list to store diffusion coeffs
 
@@ -193,7 +235,7 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
                     for j in result_columns:
                         data.append(currLine[j])
                     dataOut.append(data)
-        
+
             # calculate mean squared displacement(MSD) for each trajectory:
 
             # assuming 2D Brownian diffusion, we can simplify the equation to be:
@@ -230,7 +272,7 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
             # append traj ID and diffusion coeff to final list
             temp = [int(traj), traj_diff]
             diffusion_coeffs.append(temp)
-            
+
 
     else:
         # analyze a single trajectory
@@ -245,7 +287,7 @@ def calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID='all
                 for j in result_columns:
                     data.append(currLine[j])
                 dataOut.append(data)
-    
+
         # calculate mean squared displacement(MSD) for a single trajectory
         # all equations / workflow are the same as above
 
