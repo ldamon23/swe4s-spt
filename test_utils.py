@@ -77,6 +77,11 @@ class TestUtils_convert_ND2(unittest.TestCase):
         tif = tifffile.TiffFile('sample_SPT.tif')
         self.assertEqual(len(tif.pages), total_frames)
 
+
+class TestUtils_process_image(unittest.TestCase):
+    '''
+    Tests for the functionality of image processing
+    '''
     def test_process_image(self):
         # check that process image is taking in a tif stack and
         # then processing that tif stack
