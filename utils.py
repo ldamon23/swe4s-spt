@@ -19,7 +19,6 @@ except ModuleNotFoundError:
 import matplotlib.pyplot as plt
 import tifffile
 from tifffile import *
-from skimage import io
 from PIL import Image
 import csv
 
@@ -73,7 +72,7 @@ def convert_ND2(file_in, file_out, frame_range='all'):
 
 
 def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True,
-                  subBg=True, detectEdges=True):
+                  subBg=True, detectEdges=True, out_name='out_processed.tif'):
     '''Use image analysis algorithms to extract features from an image
 
     Parameters:
@@ -105,7 +104,7 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True,
             print("Could not find file " + file_name)
             sys.exit(1)
         finally:
-            with TiffWriter('out/result.tif') as tif:
+            with TiffWriter(out_name) as tif:
                 for frame in results:
                     tif.save(frame, contiguous=True)
     else:
@@ -115,7 +114,7 @@ def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True,
     return results
 
 
-def detect_features(data):
+def extract_features(data, out_name='out_features.tif'):
     '''
     data - list of frames to process should be numpy arrays
 
@@ -125,16 +124,29 @@ def detect_features(data):
     if data is None:
         print('No data passed to detect features.')
         sys.exit(1)
-    results = None
-    detector = cv.SimpleBlobDetector()
+    results = []
+    params = cv.SimpleBlobDetector_Params()
+    params.minArea = 0
+    params.maxArea = 10000
+    detector = cv.SimpleBlobDetector_create(params)
     i = 0
+    out_frames = []
     for frame in data:
-        # Detect blobs.
-        keypoints = detector.detect(frame)
+        # Detect blobs by thresholding converting to 8bit and using cv blob detector.
+        ret, thresh = cv.threshold(frame, 5, 100, cv.THRESH_BINARY)
+        img8 = thresh.astype('uint8')
+        keypoints = detector.detect(img8)
+        out = frame
         for kp in keypoints:
-            results.append([i, (kp.x, kp.y), kp.size])
+            results.append([i, kp.pt, kp.size])
+            cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size), (255, 0 ,0), 2)
+            out_frames.append(out)
         i = i + 1
-    
+
+    with TiffWriter(out_name) as tif:
+        for frame in out_frames:
+            tif.save(frame, contiguous=True)
+
     return results
 
 
@@ -147,10 +159,11 @@ def read_tif(path):
     for i in range(img.n_frames):
         img.seek(i)
         images.append(np.array(img))
+
     return np.array(images)
 
 
-def write_csv(data, file_name='out/result.csv'):
+def write_csv(data, file_name='results.csv'):
     '''
     data - list of arrays containing row values
     file_name - default: 'out/result.csv' output file name
@@ -160,8 +173,8 @@ def write_csv(data, file_name='out/result.csv'):
     with open(file_name, mode='w') as csv_file:
         try:
             for row in data:
-                csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                csv_file.writerow(row)
+                wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                wr.writerow(row)
         except FileNotFoundError:
             print('Could not open subdirectory \'out\'')
             sys.exit(1)
