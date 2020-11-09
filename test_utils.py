@@ -1,15 +1,14 @@
 """ Unit testing of utils
 
 """
-
-import unittest
 import utils
+import unittest
 import sys
 import matplotlib.pyplot as plt
 import tifffile
 import os
 from nd2reader import ND2Reader
-
+import cv2 as cv
 
 class TestUtils_convert_ND2(unittest.TestCase):
     """ Testing the functionality of convert_ND2
@@ -78,29 +77,6 @@ class TestUtils_convert_ND2(unittest.TestCase):
         self.assertEqual(len(tif.pages), total_frames)
 
 
-class TestUtils_process_image(unittest.TestCase):
-    '''
-    Tests for the functionality of image processing
-    '''
-    def test_process_image(self):
-        # check that process image is taking in a tif stack and
-        # then processing that tif stack
-
-        file_in = 'sample_SPT.tif'
-        file_out = 'out/result.tif'
-        result = None
-        try:
-            os.mkdir('out/')
-        except FileExistsError:
-            pass
-        result = utils.process_image(file_in, blurIter=2, subBg=False)
-        self.assertIsNotNone(result)
-
-        file = open(file_out)
-        self.assertIsNotNone(file)
-        file.close()
-        
-
 class TestUtils_calc_diffusion(unittest.TestCase):
     """ Testing the functionality of the function calc_diffusion
 
@@ -167,6 +143,47 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         
         self.assertEqual(len(diffusion),4)
         # similar to the above test, I don't know what a better test would be
+
+
+class TestUtils_process_image(unittest.TestCase):
+    '''
+    Tests for the functionality of image processing
+    Will test image processing and feature extraction
+    '''
+
+    def test_image_processing(self):
+        # check that process image is taking in a tif stack and
+        # then processing and saving that tif stack
+
+        file_in = 'sample_SPT.tif'
+        file_out = 'out_processed.tif'
+        result = None
+        result = utils.process_image(file_in, blurIter=2, subBg=False)
+        cv.waitKey(1000)
+        self.assertIsNotNone(result)
+
+        file = open(file_out)
+        self.assertIsNotNone(file)
+        file.close()
+        
+        # check that features are being extracted
+        # correctly from the processed tif stack
+        file_in = 'out_processed.tif'
+        #get the frames to be processed as np arrays
+        processed_frames = utils.read_tif(file_in)
+        #shrink the test set for optimization
+        frames = processed_frames[1:10]
+        features = None
+        # extract features will save a result.tif with keypoints
+        features = utils.extract_features(frames)
+        self.assertIsNotNone(features)
+        # the results csv should contain predictable values
+        utils.write_csv(features)
+        self.assertEqual(int(features[8][1][1]), 88)
+
+        file = open('out_features.tif')
+        self.assertIsNotNone(file)
+        file.close()
 
 
 if __name__ == '__main__':

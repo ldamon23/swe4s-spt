@@ -7,6 +7,7 @@ SWE4S Project: Single Particle Tracking
 TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled proteins of interest.
 
 **Outputs**
+* feature overlay movie (extracted features are drawn to frames)
 * processed movie (background subtracted & smoothed)
 * particle trajectories
 * diffusion coefficients & particle dwell times 
