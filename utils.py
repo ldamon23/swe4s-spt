@@ -1,24 +1,20 @@
 """ Utilty functions for SPT project
+
+Functions include:
+                            - Conversion of ND2 files to tif stacks
+                            - Reading of tif stacks as a list of numpy arrays
+                            - Processing of numpy arrays using computer vision
+                            - Extraction of signal features from numpy arrays
+                            - Writing custom CSV files given arrays of data
 """
 
 import sys
 import subprocess
-try:
-    import cv2 as cv
-except ModuleNotFoundError:
-    subprocess.check_call([sys.executable, "-m",
-                           "pip", "install", 'opencv-contrib-python'])
-    import cv2 as cv
+import cv2 as cv
 import numpy as np
-try:
-    from nd2reader import ND2Reader
-except ModuleNotFoundError:
-    subprocess.check_call([sys.executable, "-m",
-                           "pip", "install", 'nd2reader'])
-    from nd2reader import ND2Reader
+from nd2reader import ND2Reader
 import matplotlib.pyplot as plt
 import tifffile
-from tifffile import *
 from PIL import Image
 import csv
 
@@ -71,55 +67,64 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     return output_img
 
 
-def process_image(file_name, blurIter=1, gBlur=True, tif_stack=True,
-                  subBg=True, detectEdges=True, out_name='out_processed.tif'):
-    '''Use image analysis algorithms to extract features from an image
+def process_image(file_name, blurIter=1, gBlur=True,
+                  out_name='out_processed.tif'):
+    '''Use image analysis algorithms to clean up signal from images
+
+    Requirements:
+    The image must be a tif stack as of now
+
+    Algorithms used:
+    Gaussian Blur -
+    Laplacian -
+
+    Definitions:
+    tif stack: A virtual stack of tagged image files (tif) images 
+                 : in this case it is likely to be a timeseries of fluorescence data
 
     Parameters:
-    file_name    :name of the file to be processed
-    tif_stack     :decides whether to process image as a tif stack
-    blurIter    :# of iterations the gaussian blur should be applied
-    gBlur    :boolean decider for gaussian blur application
-    tif_stack    :boolean decider to handle file as a tif stack
+    file_name    :string: Name of the file to be processed
+    blurIter    :integer: Number of iterations the gaussian blur should be applied
+    gBlur    :boolean: Decider for gaussian blur application
 
     Outputs:
-    results    :list of processed frames from the video
+    results    :List of numpy arrays (frames) extracted from the given video file
     '''
     results = []
-    if tif_stack:
-        try:
-            images = read_tif(file_name)
-            for i in range(len(images)):
-                img = images[i]
-                if gBlur:
-                    img = cv.GaussianBlur(img, (5, 5), blurIter)
-                if subBg:
-                    img = subtract_background(img)
-                if detectEdges:
-                    img = cv.Laplacian(img, cv.CV_64F)
-                    img = np.uint16(np.absolute(img))
-                print('.', end='')
-                results.append(img)
-        except FileNotFoundError:
-            print("Could not find file " + file_name)
-            sys.exit(1)
-        finally:
-            with TiffWriter(out_name) as tif:
-                for frame in results:
-                    tif.save(frame, contiguous=True)
-    else:
-        print('Only tif stacks are supported currently')
+
+    try:
+        images = read_tif(file_name)
+        for i in range(len(images)):
+            img = images[i]
+            if gBlur:
+                img = cv.GaussianBlur(img, (5, 5), blurIter)
+            img = cv.Laplacian(img, cv.CV_64F)
+            img = np.uint16(np.absolute(img))  #convert back to 16bit to save as a readable tif stack
+            print('.', end='')
+            results.append(img)
+    except FileNotFoundError:
+        print("Could not find file " + file_name)
         sys.exit(1)
+    finally:
+        with tifffile.TiffWriter(out_name) as tif:  # may want to refactor is used twice
+            for frame in results:
+                tif.save(frame, contiguous=True)
+
 
     return results
 
 
 def extract_features(data, out_name='out_features.tif'):
     '''
-    data - list of frames to process should be numpy arrays
+    Ues opencv blob detection to find features from numpy arrays
+    
+    Inputs:
+    data - List of numpy arrays (frames)
 
-    returns an array of arrays that each contain
+    Outputs:
+    results    :Array of arrays with structure as follows
                 (frame id, feature position(x, y), feature size)
+    
     '''
     if data is None:
         print('No data passed to detect features.')
@@ -143,7 +148,7 @@ def extract_features(data, out_name='out_features.tif'):
             out_frames.append(out)
         i = i + 1
 
-    with TiffWriter(out_name) as tif:
+    with tifffile.TiffWriter(out_name) as tif:
         for frame in out_frames:
             tif.save(frame, contiguous=True)
 
@@ -152,7 +157,14 @@ def extract_features(data, out_name='out_features.tif'):
 
 def read_tif(path):
     """
-    path - Path to the multipage-tiff file
+    Read a tif stack and return numpy arrays
+    
+    Inputs:
+    path - :string: Path to the tif stack 
+    
+    Returns:
+    a numpy array of numpy arrays (tif stack frames)
+    
     """
     img = Image.open(path)
     images = []
@@ -165,10 +177,16 @@ def read_tif(path):
 
 def write_csv(data, file_name='results.csv'):
     '''
-    data - list of arrays containing row values
-    file_name - default: 'out/result.csv' output file name
+    Write a simple CSV file with given data and name
     
-    writes a csv with given file name and data
+    Inputs:
+    data - :list of arrays: Contains row values
+    file_name - :string:  Output file name
+                        default - 'out/result.csv' 
+    
+    Output:
+    No return
+    Will write a CSV saving as file name with given data
     '''
     with open(file_name, mode='w') as csv_file:
         try:
@@ -178,14 +196,6 @@ def write_csv(data, file_name='results.csv'):
         except FileNotFoundError:
             print('Could not open subdirectory \'out\'')
             sys.exit(1)
-
-def subtract_background(img):
-    '''
-    uses image analysis algorithms to subtract background from frames
-    '''
-    backSub = cv.createBackgroundSubtractorMOG2()
-    img = backSub.apply(img)
-    return img
 
 
 def calc_diffusion(file_in, file_out, query_column,

@@ -158,7 +158,7 @@ class TestUtils_process_image(unittest.TestCase):
         file_in = 'sample_SPT.tif'
         file_out = 'out_processed.tif'
         result = None
-        result = utils.process_image(file_in, blurIter=2, subBg=False)
+        result = utils.process_image(file_in, blurIter=2)
         cv.waitKey(1000)
         self.assertIsNotNone(result)
 
@@ -179,6 +179,7 @@ class TestUtils_process_image(unittest.TestCase):
         self.assertIsNotNone(features)
         # the results csv should contain predictable values
         utils.write_csv(features)
+        print(features)
         self.assertEqual(int(features[8][1][1]), 88)
 
         file = open('out_features.tif')

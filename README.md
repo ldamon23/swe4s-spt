@@ -14,6 +14,8 @@ TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled prot
 
 
 **Updates**
+* 11/09/2020
+- improved documentation and imports using guidance from project review and removed unused variables in the cv functions
 * 11/07/2020
 - fixed testing for process_image by adding a directory creation for out/ and re-developed process_frame output file as a tif stack instead of multiple .pngs
 * 11/06/2020:
