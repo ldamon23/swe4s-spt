@@ -1,19 +1,20 @@
-""" Utilty functions for SPT project
+""" 
+Utilty functions for SPT project
 
 Functions include:
-                            - Conversion of ND2 files to tif stacks
-                            - Reading of tif stacks as a list of numpy arrays
-                            - Processing of numpy arrays using computer vision
-                            - Extraction of signal features from numpy arrays
-                            - Writing custom CSV files given arrays of data
+convert_ND2()      - Conversion of ND2 files to tif stacks
+read_tif()               - Reading of tif stacks as a list of numpy arrays
+process_image()    - Processing of numpy arrays using computer vision
+extract_features()  - Extraction of signal features from numpy arrays
+write_csv()            - Writing custom CSV files given arrays of data
+calc_diffusion()     - Calculates diffusion coefficient
+                                 from extracted signal features
 """
 
 import sys
-import subprocess
-import cv2 as cv
-import numpy as np
 from nd2reader import ND2Reader
-import matplotlib.pyplot as plt
+import cv2 as cv  # computer vision library
+import numpy as np
 import tifffile
 from PIL import Image
 import csv
@@ -138,6 +139,7 @@ def extract_features(data, out_name='out_features.tif'):
     out_frames = []
     for frame in data:
         # Detect blobs by thresholding converting to 8bit and using cv blob detector.
+        # Ret is a return that is the threshold used.
         ret, thresh = cv.threshold(frame, 5, 100, cv.THRESH_BINARY)
         img8 = thresh.astype('uint8')
         keypoints = detector.detect(img8)

@@ -159,7 +159,6 @@ class TestUtils_process_image(unittest.TestCase):
         file_out = 'out_processed.tif'
         result = None
         result = utils.process_image(file_in, blurIter=2)
-        cv.waitKey(1000)
         self.assertIsNotNone(result)
 
         file = open(file_out)
