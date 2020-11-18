@@ -8,7 +8,7 @@ TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled prot
 
 **Outputs**
 * feature overlay movie (extracted features are drawn to frames)
-* processed movie (background subtracted & smoothed)
+* processed movie
 * particle trajectories
 * diffusion coefficients & particle dwell times 
 
