@@ -339,3 +339,56 @@ def calc_diffusion(file_in, file_out, query_column,
     traj_file.close()
 
     return dataOut, diffusion_coeffs
+
+def calc_dwelltime(xydata, max_disp):
+    """ Calculate particle dwell time
+    
+    Inputs:
+    ----
+    xydata          : list
+                      list of xy coordinates for each particle
+    max_disp        : int
+                      maxium displacement a particle travels between frames
+    
+    Outputs:
+    ----
+    dwell_times     : int
+                      particle dwell time
+    
+    """
+
+    boundIdx = {};
+    currRow = 1;
+    done = false;
+    
+    while ~done
+        
+        # for the current row, compute distances from other points
+        distVsCurrRow = sqrt(sum((currtrack - currtrack(currRow, :)).^2, 2))
+        # find points that are less than the threshold distance)
+        bound = [distVsCurrRow < thresholdDistForBound ; false]
+        
+        # Find series of consecutive ones
+        # LJD note: find the first non-zero element in the matrix of Bound - 1 (if it's bound, then it's 1; bound - 1 = 0; unbound-1 = -1
+        consecOnes = find(bound(currRow:end) - 1 < 0, 1, 'first')  # ORIGINAl
+        
+        consecOnes = consecOnes - 1; % LJD edit - modifed 1 from 2 (to get accurate starting point for n consecutive frames;
+        % note that this is an array that is currFrame x 1,so indices are relative to that
+        
+        if consecOnes > minBoundDwellFrames
+            
+            isBound = true
+            currRow = consecOnes + currRow
+            
+            boundIdx{end + 1} = (currRow - consecOnes):(currRow-1)
+            # label each point with its appropriate state
+            currBoundLength = length(boundIdx)
+            
+            boundTracks(end+1) = tracks2plot(gg)
+        else
+            currRow = currRow + 1;
+        
+        if currRow >= size(currtrack, 1)
+            done = true;
+
+
