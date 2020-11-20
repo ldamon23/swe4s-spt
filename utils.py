@@ -283,7 +283,7 @@ def calc_diffusion(file_in, file_out, query_column,
             ydata = np.array(ydata)/1000  # converting from nm to um (convention)
             # now, calculate the displacements
             r = np.sqrt(xdata**2 + ydata**2)
-            diff = np.diff(r) #this calculates r(t + dt) - r(t)
+            diff = np.diff(r)  # this calculates r(t + dt) - r(t)
             diff_sq = diff**2
             MSD = np.mean(diff_sq)
 
@@ -345,10 +345,13 @@ def calc_dwelltime(xydata, max_disp):
     
     Inputs:
     ----
-    xydata          : list
-                      list of xy coordinates for each particle
-    max_disp        : int
-                      maxium displacement a particle travels between frames
+    xydata           : list
+                       list of xy coordinates for each particle
+    max_disp         : int
+                       maxium displacement a particle travels between frames
+    min_bound_frames : int
+                       minimum number of frames a particle can be bound for; removes
+                       spurrious binding events/false positives
     
     Outputs:
     ----
@@ -357,38 +360,46 @@ def calc_dwelltime(xydata, max_disp):
     
     """
 
-    boundIdx = {};
-    currRow = 1;
-    done = false;
-    
-    while ~done
-        
-        # for the current row, compute distances from other points
-        distVsCurrRow = sqrt(sum((currtrack - currtrack(currRow, :)).^2, 2))
-        # find points that are less than the threshold distance)
-        bound = [distVsCurrRow < thresholdDistForBound ; false]
-        
-        # Find series of consecutive ones
-        # LJD note: find the first non-zero element in the matrix of Bound - 1 (if it's bound, then it's 1; bound - 1 = 0; unbound-1 = -1
-        consecOnes = find(bound(currRow:end) - 1 < 0, 1, 'first')  # ORIGINAl
-        
-        consecOnes = consecOnes - 1; % LJD edit - modifed 1 from 2 (to get accurate starting point for n consecutive frames;
-        % note that this is an array that is currFrame x 1,so indices are relative to that
-        
-        if consecOnes > minBoundDwellFrames
-            
-            isBound = true
-            currRow = consecOnes + currRow
-            
-            boundIdx{end + 1} = (currRow - consecOnes):(currRow-1)
-            # label each point with its appropriate state
-            currBoundLength = length(boundIdx)
-            
-            boundTracks(end+1) = tracks2plot(gg)
-        else
-            currRow = currRow + 1;
-        
-        if currRow >= size(currtrack, 1)
-            done = true;
+    len_some_xy = len(some_xy)  # I need this later
+    bound_idx = []
+    curr_row = 0
+    done = False
 
+    # first, compute all displacements
+    all_displacements = squareform(pdist(some_xy))
+    # use a while loop to loop through the xydata
+    while done == False:
+        print('Curr row is ' + str(curr_row))
+
+        # find points that are less than the threshold distance
+        bound_states = []
+        for displacement in range(len(all_displacements)):
+            if all_displacements[displacement, curr_row] < max_disp:
+                state = 1  # particle is bound
+            else:
+                state = 0. # particle is unbound
+            bound_states.append(state)
+        bound_states = np.array(bound_states)
+        print(bound_states)
+
+        # get the index of the last unbound element; 
+        # this allows us to compute how many frames the particle was bound
+        consec_ones = np.flatnonzero(bound_states == 1)  # return first element of flat array
+        print(consec_ones)
+        if len(consec_ones) > min_bound_frames:
+
+            is_bound = True
+            curr_row = consec_ones[len(consec_ones)-1] + curr_row
+
+            bound_idx.append(consec_ones)
+        else:
+            curr_row = curr_row + 1
+
+        if ((curr_row >= len(some_xy)).any()):
+            done = True;
+            print('All done!')
+
+        print(bound_idx)
+    
+    return dwell_times
 
