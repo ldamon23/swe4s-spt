@@ -370,11 +370,13 @@ def calc_dwelltime(xydata, max_disp):
     # use a while loop to loop through the xydata
     while done == False:
         print('Curr row is ' + str(curr_row))
-
+        # generate matrix of all displacements for the current row onwards
+        temp_displacements = squareform(pdist(some_xy[curr_row:(len(some_xy))]))
+        print(temp_displacements)
         # find points that are less than the threshold distance
         bound_states = []
         for displacement in range(len(all_displacements)):
-            if all_displacements[displacement, curr_row] < max_disp:
+            if temp_displacements[displacement, curr_row] < max_disp:
                 state = 1  # particle is bound
             else:
                 state = 0. # particle is unbound
@@ -385,21 +387,23 @@ def calc_dwelltime(xydata, max_disp):
         # get the index of the last unbound element; 
         # this allows us to compute how many frames the particle was bound
         consec_ones = np.flatnonzero(bound_states == 1)  # return first element of flat array
+        print('Consec ones are')
         print(consec_ones)
+        print('length of consec ones are: ' + str(len(consec_ones)))
         if len(consec_ones) > min_bound_frames:
 
             is_bound = True
-            curr_row = consec_ones[len(consec_ones)-1] + curr_row
+            curr_row = len(consec_ones) + curr_row
 
             bound_idx.append(consec_ones)
         else:
             curr_row = curr_row + 1
 
-        if ((curr_row >= len(some_xy)).any()):
+    #     if ((curr_row >= len(some_xy)).any()):
+        if curr_row >= len(some_xy):
             done = True;
             print('All done!')
-
-        print(bound_idx)
+    print(bound_idx)
     
     return dwell_times
 
