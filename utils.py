@@ -202,13 +202,12 @@ def write_csv(data, file_name='results.csv'):
             sys.exit(1)
 
 
-def calc_diffusion(file_in, file_out, query_column,
-                   result_columns, traj_ID='all', deltaT=0.1):
+def calc_diffusion(file_in, query_column, result_columns,
+                   traj_ID='all', deltaT=0.1):
     """ Calculate diffusion coefficients of particles
 
     Parameters:
     file_in          : trajectory file to process
-    file_out         : file to save (NOTE: currently unused; later version will save to csv)
     query_column     : column containing the trajectory IDS
     result_columns   : columns containing the X and Y coordinates, respectively
     traj_ID          : trajectories to analyze. By default, all are analyzed
