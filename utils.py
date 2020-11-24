@@ -18,6 +18,8 @@ import numpy as np
 import tifffile
 from PIL import Image
 import csv
+import math
+from scipy.spatial.distance import pdist, squareform
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -200,13 +202,12 @@ def write_csv(data, file_name='results.csv'):
             sys.exit(1)
 
 
-def calc_diffusion(file_in, file_out, query_column,
-                   result_columns, traj_ID='all', deltaT=0.1):
+def calc_diffusion(file_in, query_column, result_columns,
+                   traj_ID='all', deltaT=0.1):
     """ Calculate diffusion coefficients of particles
 
     Parameters:
     file_in          : trajectory file to process
-    file_out         : file to save (NOTE: currently unused; later version will save to csv)
     query_column     : column containing the trajectory IDS
     result_columns   : columns containing the X and Y coordinates, respectively
     traj_ID          : trajectories to analyze. By default, all are analyzed
@@ -283,7 +284,7 @@ def calc_diffusion(file_in, file_out, query_column,
             ydata = np.array(ydata)/1000  # converting from nm to um (convention)
             # now, calculate the displacements
             r = np.sqrt(xdata**2 + ydata**2)
-            diff = np.diff(r) #this calculates r(t + dt) - r(t)
+            diff = np.diff(r)  # this calculates r(t + dt) - r(t)
             diff_sq = diff**2
             MSD = np.mean(diff_sq)
 
@@ -339,3 +340,70 @@ def calc_diffusion(file_in, file_out, query_column,
     traj_file.close()
 
     return dataOut, diffusion_coeffs
+
+
+def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
+    """ Calculate particle dwell time
+
+    Inputs:
+    ----
+    xy_data           : list
+                       list of xy coordinates for each particle
+    max_disp         : int
+                       maxium displacement a particle travels between frames
+    min_bound_frames : int
+                       minimum number of frames a particle can be bound for;
+                       removes spurrious binding events/false positives
+    frame_rate       : int
+                       time delay between each frame, in seconds.
+                       Defaults to 0.1 sec
+
+    Outputs:
+    ----
+    dwell_times     : int
+                      particle dwell time
+
+    """
+
+    bound_frames = []
+    curr_row = 0
+    done = False
+
+    # first, compute all displacements
+    all_displacements = squareform(pdist(xy_data))
+    # use a while loop to loop through the xydata
+    while done == False:
+        # find points that are less than the threshold distance
+        bound_states = []
+        for displacement in range(len(all_displacements)):
+            if all_displacements[displacement, curr_row] < max_disp:
+                state = 1  # particle is bound
+            else:
+                state = 0  # particle is unbound
+            bound_states.append(state)
+        bound_states = np.array(bound_states)
+
+        # get the index of the last unbound element;
+        # this allows us to compute how many frames the particle was bound
+        consec_ones = np.flatnonzero(bound_states == 1)
+        if len(consec_ones) > min_bound_frames:
+            is_bound = True
+            curr_row = len(consec_ones) + curr_row
+            bound_frames.append(consec_ones)
+        else:
+            curr_row = curr_row + 1
+
+        if curr_row >= len(xy_data):
+            done = True
+
+    # now, turn the length of the bound index into an actual dwell time
+    # first, convert bound_frames to array to use array indexing
+    # dtype argument removes np deprecation warning
+    bound_frames = np.array(bound_frames, dtype=object)
+
+    dwell_times = []
+    for event in range(len(bound_frames)):
+        dwell_time = frame_rate * len(bound_frames[event])
+        dwell_times.append(dwell_time)
+
+    return dwell_times
