@@ -18,6 +18,8 @@ import numpy as np
 import tifffile
 from PIL import Image
 import csv
+import math
+from scipy.spatial.distance import pdist, squareform
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -340,70 +342,69 @@ def calc_diffusion(file_in, file_out, query_column,
 
     return dataOut, diffusion_coeffs
 
-def calc_dwelltime(xydata, max_disp):
+
+def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
     """ Calculate particle dwell time
-    
+
     Inputs:
     ----
-    xydata           : list
+    xy_data           : list
                        list of xy coordinates for each particle
     max_disp         : int
                        maxium displacement a particle travels between frames
     min_bound_frames : int
-                       minimum number of frames a particle can be bound for; removes
-                       spurrious binding events/false positives
-    
+                       minimum number of frames a particle can be bound for;
+                       removes spurrious binding events/false positives
+    frame_rate       : int
+                       time delay between each frame, in seconds.
+                       Defaults to 0.1 sec
+
     Outputs:
     ----
     dwell_times     : int
                       particle dwell time
-    
+
     """
 
-    len_some_xy = len(some_xy)  # I need this later
-    bound_idx = []
+    bound_frames = []
     curr_row = 0
     done = False
 
     # first, compute all displacements
-    all_displacements = squareform(pdist(some_xy))
+    all_displacements = squareform(pdist(xy_data))
     # use a while loop to loop through the xydata
     while done == False:
-        print('Curr row is ' + str(curr_row))
-        # generate matrix of all displacements for the current row onwards
-        temp_displacements = squareform(pdist(some_xy[curr_row:(len(some_xy))]))
-        print(temp_displacements)
         # find points that are less than the threshold distance
         bound_states = []
         for displacement in range(len(all_displacements)):
-            if temp_displacements[displacement, curr_row] < max_disp:
+            if all_displacements[displacement, curr_row] < max_disp:
                 state = 1  # particle is bound
             else:
-                state = 0. # particle is unbound
+                state = 0  # particle is unbound
             bound_states.append(state)
         bound_states = np.array(bound_states)
-        print(bound_states)
 
-        # get the index of the last unbound element; 
+        # get the index of the last unbound element;
         # this allows us to compute how many frames the particle was bound
-        consec_ones = np.flatnonzero(bound_states == 1)  # return first element of flat array
-        print('Consec ones are')
-        print(consec_ones)
-        print('length of consec ones are: ' + str(len(consec_ones)))
+        consec_ones = np.flatnonzero(bound_states == 1)
         if len(consec_ones) > min_bound_frames:
-
             is_bound = True
             curr_row = len(consec_ones) + curr_row
-
-            bound_idx.append(consec_ones)
+            bound_frames.append(consec_ones)
         else:
             curr_row = curr_row + 1
 
-    #     if ((curr_row >= len(some_xy)).any()):
-        if curr_row >= len(some_xy):
-            done = True;
-            print('All done!')
-    print(bound_idx)
-    
-    return dwell_times
+        if curr_row >= len(xy_data):
+            done = True
 
+    # now, turn the length of the bound index into an actual dwell time
+    # first, convert bound_frames to array to use array indexing
+    # dtype argument removes np deprecation warning
+    bound_frames = np.array(bound_frames, dtype=object)
+
+    dwell_times = []
+    for event in range(len(bound_frames)):
+        dwell_time = frame_rate * len(bound_frames[event])
+        dwell_times.append(dwell_time)
+
+    return dwell_times

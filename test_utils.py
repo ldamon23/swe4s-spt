@@ -142,7 +142,6 @@ import sys
 #        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
 #
 #        self.assertEqual(len(diffusion),4)
-#        # similar to the above test, I don't know what a better test would be
 
 class TestUtils_calc_dwelltime(unittest.TestCase):
     """
@@ -152,18 +151,60 @@ class TestUtils_calc_dwelltime(unittest.TestCase):
     def test_calc_dwelltime_dataexists(self):
         # check that we can read in some data
     
-    # create some arbitrary xy coordinates (units in nm)
-    some_xy = [['170.202', '22.481'],
-                ['169.726', '22.459'],
-                ['169.192', '22.727'],
-                ['165.640', '22.686']]
-    # define the max displacement a particle has b/n frames
-    max_disp = 200  # units in nm
-    
-    # calc & print dwell time
-    dwelltime = utils.calc_dwelltime(some_xy, max_disp)
-    print(dwelltime)
+        # create some arbitrary xy coordinates (units in nm)
+        some_xy = [['170.202', '22.481'],
+                   ['169.726', '22.459'],
+                   ['169.192', '22.727'],
+                   ['165.640', '22.686']]
+        max_disp = 200  # max displacement between frames; units in nm
+        min_bound_frames = 2  # min number of frames to be considered bound
+        frame_rate = 0.1  # in seconds
 
+        # calc & print dwell time
+        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
+        self.assertEqual(dwell_time, [4*frame_rate])
+        
+        # can we handle tracks with multiple binding events?
+        some_xy = [['3', '3'],
+                   ['3', '4'],
+                   ['3', '5'],
+                   ['4', '6'],
+                   ['5', '4'],
+                   ['100', '100'],
+                   ['200', '200'],
+                   ['250', '250'],
+                   ['251', '251'],
+                   ['251', '252'],
+                   ['251', '253'],
+                   ['300', '300'],
+                   ['350', '350']]
+        max_disp = 5  # units in nm
+        min_bound_frames = 2
+        frame_rate = 0.1  # in seconds
+
+        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
+        self.assertEqual(dwell_time, [5*frame_rate, 4*frame_rate] )
+        
+        # can we handle no binding events?
+        some_xy = [['3', '3'],
+                   ['3', '40'],
+                   ['3', '80'],
+                   ['4', '120'],
+                   ['5', '160'],
+                   ['100', '200'],
+                   ['200', '240'],
+                   ['250', '280'],
+                   ['251', '320'],
+                   ['251', '360'],
+                   ['251', '400'],
+                   ['300', '440'],
+                   ['350', '480']]
+        max_disp = 5  # units in nm
+        min_bound_frames = 2
+        frame_rate = 0.1  # in seconds
+
+        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
+        self.assertEqual(dwell_time, [])
 
 #class TestUtils_process_image(unittest.TestCase):
 #    '''
