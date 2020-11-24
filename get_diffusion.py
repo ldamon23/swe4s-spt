@@ -40,8 +40,7 @@ def main():
 
     traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
 
-    for i in diffusion:
-        print(diffusion)
+    print(diffusion)
     
     ## TO DO: plot histogram of trajectory
 
