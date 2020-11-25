@@ -20,6 +20,7 @@ hist_file_out:  str
 import csv
 import matplotlib.pyplot as plt
 
+
 def main():
 
     """ Main function for plotting data
@@ -30,17 +31,16 @@ def main():
     diff_file_in = 'sample_traj_diffusion_coeffs.csv'
     hist_file_out = diff_file_in[:-4] + '_hist.png'
 
-    
     # read the file in
     try:
-        file = open(diff_file_in, 'r') # open file with traj info
-    except:
+        file = open(diff_file_in, 'r')  # open file with traj info
+    except FileNotFoundError:
         print("Could not find file " + diff_file_in)
         sys.exit(1)
 
     header = None
     diffusion = []
-    
+
     for line in file:
         if header is None:
             header = line
@@ -52,12 +52,12 @@ def main():
 
     # begin plotting
     nbins = 300  # number of bins for hist
-    
-    width=8
-    height=3
-    fig = plt.figure(figsize=(width,height),dpi=300)
 
-    ax = fig.add_subplot(1,1,1)
+    width = 8
+    height = 3
+    fig = plt.figure(figsize=(width, height), dpi=300)
+
+    ax = fig.add_subplot(1, 1, 1)
 
     ax.hist(diffusion, nbins)
 
@@ -66,9 +66,9 @@ def main():
     ax.set_xlabel('Diffusion Coeff (um^2/s)')
     ax.set_ylabel('Events')
     plt.xlim([0.0035, 0.0055])  # change as needed
-    plt.savefig(hist_file_out,bbox_inches='tight')
+    plt.savefig(hist_file_out, bbox_inches='tight')
+
 
 if __name__ == '__main__':
 
     main()
-
