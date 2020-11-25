@@ -406,6 +406,9 @@ def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
         dwell_time = frame_rate * len(bound_frames[event])
         dwell_times.append(dwell_time)
 
+    if dwell_times == []:
+        return None
+
     return dwell_times
 
 def get_xy_coords(file_in, query_column, result_columns, traj_ID):
