@@ -1,14 +1,16 @@
-""" 
+"""
 Utilty functions for SPT project
 
 Functions include:
-convert_ND2()      - Conversion of ND2 files to tif stacks
-read_tif()               - Reading of tif stacks as a list of numpy arrays
-process_image()    - Processing of numpy arrays using computer vision
-extract_features()  - Extraction of signal features from numpy arrays
-write_csv()            - Writing custom CSV files given arrays of data
-calc_diffusion()     - Calculates diffusion coefficient
-                                 from extracted signal features
+convert_ND2()       : Conversion of ND2 files to tif stacks
+read_tif()          : Reading of tif stacks as a list of numpy arrays
+process_image()     : Processing of numpy arrays using computer vision
+extract_features()  : Extraction of signal features from numpy arrays
+write_csv()         : Writing custom CSV files given arrays of data
+calc_diffusion()    : Calculates diffusion coefficient from extracted signal
+                      features
+calc_dwelltime()    : Calculate dwell times of extracted signal features
+get_xy_coords()     : Get xy_coords of extracted signal features
 """
 
 import sys
@@ -233,7 +235,7 @@ def calc_diffusion(file_in, query_column, result_columns,
     # check that the file exists
     try:
         traj_file = open(file_in, 'r') # open file with traj info
-    except:
+    except FileNotFoundError:
         print("Could not find file " + file_in)
         sys.exit(1)
 
@@ -411,12 +413,13 @@ def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
 
     return dwell_times
 
+
 def get_xy_coords(file_in, query_column, result_columns, traj_ID):
     ''' Helper function for extracting a particle's XY coordinates
-    
+
     With a given CSV file containing trajectory info, loop through all of the
     tracks and extract their XY coordinates.
-    
+
     Parameters:
     file_in          : str
                        trajectory file to process
@@ -435,8 +438,8 @@ def get_xy_coords(file_in, query_column, result_columns, traj_ID):
 
     # check that the file exists
     try:
-        traj_file = open(file_in, 'r') # open file with traj info
-    except:
+        traj_file = open(file_in, 'r')  # open file with traj info
+    except FileNotFoundError:
         print("Could not find file " + file_in)
         sys.exit(1)
 

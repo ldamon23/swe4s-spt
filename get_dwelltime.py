@@ -10,7 +10,8 @@ import argparse
 import numpy as np
 import csv
 import matplotlib.pyplot as plt
-import time
+import sys
+
 
 def main():
 
@@ -22,8 +23,6 @@ def main():
 
     """
     # initialize argparser
-    start_time = time.gmtime(time.time())
-    print('Start time is: ' + str(start_time))
     parser = argparse.ArgumentParser(description='Get a column from a file')
 
     parser.add_argument('--file',
@@ -45,7 +44,7 @@ def main():
                         dest='max_disp',
                         type=int,
                         required=True,
-                        help="Maximum distance a particle can travel to be bound")
+                        help="Max distance a particle can travel while bound")
     args = parser.parse_args()
 
     # set-up
@@ -59,8 +58,8 @@ def main():
 
     # first, generate a list of unique trajectories in the file
     try:
-        traj_file = open(file_in, 'r') # open file with traj info
-    except:
+        traj_file = open(file_in, 'r')  # open file with traj info
+    except FileNotFoundError:
         print("Could not find file " + file_in)
         sys.exit(1)
 
@@ -90,11 +89,11 @@ def main():
                                         traj_ID)
         # now, compute dwell times
         dwell_time = utils.calc_dwelltime(xy_coords,
-                                      max_disp,
-                                      min_bound_frames,
-                                      frame_rate)
+                                          max_disp,
+                                          min_bound_frames,
+                                          frame_rate)
         # handle cases where we may have multiple binding events (rare)
-        if dwell_time != None:
+        if dwell_time is not None:
             if len(dwell_time) > 1:
                 for i in range(len(dwell_time)):
                     # generate a new traj ID, using decimal points
@@ -104,7 +103,7 @@ def main():
             else:
                 # not doing the below appends a list to the list
                 dwell_time = dwell_time[0]
-        
+
         all_dwell_times.append([int(traj_ID), dwell_time])
 
     # write the data to a file
@@ -126,13 +125,13 @@ def main():
     # remove Nones and store
     dwell_time_plot = []
     for i in range(len(dwell_times)):
-        if dwell_times[i] != None:
+        if dwell_times[i] is not None:
             dwell_time_plot.append(dwell_times[i])
-    width=3
-    height=3
-    fig = plt.figure(figsize=(width,height),dpi=300)
+    width = 3
+    height = 3
+    fig = plt.figure(figsize=(width, height), dpi=300)
 
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(1, 1, 1)
 
     ax.hist(dwell_time_plot)
 
@@ -140,10 +139,9 @@ def main():
     ax.spines['right'].set_visible(False)
     ax.set_xlabel('Dwell Time (s)')
     ax.set_ylabel('Events')
-    plt.savefig(hist_out_file,bbox_inches='tight')
-    
-    end_time = time.gmtime(time.time())
-    print('End time is: ' + str(end_time))
+    plt.savefig(hist_out_file, bbox_inches='tight')
+
+
 if __name__ == '__main__':
 
     main()

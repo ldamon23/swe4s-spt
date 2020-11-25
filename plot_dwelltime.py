@@ -1,8 +1,8 @@
 """ Plot Dwell Time
 
 This script will be useful for plotting existing dwell time files.
-The calculation of dwell times, similar to diffusion coefficients, can sometimes
-take 10-30 min, depending on how many trajectories are being analyzed. If a user
+The calculation of dwell times, similar to diffusion coefficients, can often
+take 10-30 min, depending on how many trajectories are analyzed. If a user
 would rather configure plots on a pre-existing CSV files, they can do so here.
 
 Inputs:
@@ -20,6 +20,7 @@ hist_file_out  : str
 import csv
 import matplotlib.pyplot as plt
 
+
 def main():
 
     """ Main function for plotting data
@@ -30,17 +31,16 @@ def main():
     dwell_file_in = 'sample_traj_dwell_times.csv'
     hist_file_out = dwell_file_in[:-4] + '_hist2.png'
 
-    
     # read the file in
     try:
-        file = open(dwell_file_in, 'r') # open file with traj info
-    except:
+        file = open(dwell_file_in, 'r')  # open file with traj info
+    except FileNotFoundError:
         print("Could not find file " + dwell_file_in)
         sys.exit(1)
 
     header = None
     dwell_time_plot = []
-    
+
     for line in file:
         if header is None:
             header = line
@@ -54,12 +54,12 @@ def main():
 
     # begin plotting
     nbins = 100  # number of bins for hist
-    
-    width=3
-    height=3
-    fig = plt.figure(figsize=(width,height),dpi=300)
 
-    ax = fig.add_subplot(1,1,1)
+    width = 3
+    height = 3
+    fig = plt.figure(figsize=(width, height), dpi=300)
+
+    ax = fig.add_subplot(1, 1, 1)
 
     ax.hist(dwell_time_plot, nbins)
 
@@ -67,10 +67,9 @@ def main():
     ax.spines['right'].set_visible(False)
     ax.set_xlabel('Dwell Time (s)')
     ax.set_ylabel('Events')
-    plt.savefig(hist_file_out,bbox_inches='tight')
+    plt.savefig(hist_file_out, bbox_inches='tight')
+
 
 if __name__ == '__main__':
 
     main()
-
-
