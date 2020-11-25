@@ -10,6 +10,7 @@ import os
 from nd2reader import ND2Reader
 import cv2 as cv
 
+
 class TestUtils_convert_ND2(unittest.TestCase):
     """ Testing the functionality of convert_ND2
 
@@ -85,27 +86,33 @@ class TestUtils_calc_diffusion(unittest.TestCase):
     def test_calc_diffusion_missingfile(self):
         # check for missing file, throw an error
 
-        file_in = 'crapFile.csv'  # I'm assuming I'll have a CSV, similar to mosaic
-        file_out = file_in[:-4] + '_diffusion_coeffs.csv'
+        file_in = 'crapFile.csv'  # I'm assuming I'll have a CSV
         traj_ID = 1
         query_column = 1
         results_columns = [3, 4]
 
         with self.assertRaises(SystemExit) as ex:
-            utils.calc_diffusion(file_in, file_out, query_column, traj_ID, results_columns)
+            utils.calc_diffusion(file_in,
+                                 query_column,
+                                 traj_ID,
+                                 results_columns)
         self.assertEqual(ex.exception.code, 1)
 
     def test_calc_diffusion_look_at_single_traj(self):
         # identify a single trajectory, maybe pull out X-Y coords?
 
-        file_in = 'sample_traj.csv'  # I'm assuming I'll have a CSV, similar to mosaic
+        file_in = 'sample_traj.csv'  # I'm assuming I'll have a CSV
         file_out = file_in[:-4] + '_diffusion_coeffs.csv'
         traj_ID = 1
         query_column = 1
         result_columns = [3, 4]
         deltaT = 0.1  # exposure time, in seconds
 
-        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
+        traj_xy, diffusion = utils.calc_diffusion(file_in,
+                                                  query_column,
+                                                  result_columns,
+                                                  traj_ID,
+                                                  deltaT)
 
         expected = [['170.202', '22.481'],
                     ['169.726', '22.459'],
@@ -117,14 +124,17 @@ class TestUtils_calc_diffusion(unittest.TestCase):
     def test_calc_diffusion_get_diffusion_single_traj(self):
         # compute the diffusion coefficient for a trajectory
 
-        file_in = 'sample_traj.csv'  # I'm assuming I'll have a CSV, similar to mosaic
-        file_out = file_in[:-4] + '_diffusion_coeffs.csv'
+        file_in = 'sample_traj.csv'  # I'm assuming I'll have a CSV
         traj_ID = 1
         query_column = 1
         result_columns = [3, 4]
         deltaT = 0.1  # exposure time, in seconds
 
-        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
+        traj_xy, diffusion = utils.calc_diffusion(file_in,
+                                                  query_column,
+                                                  result_columns,
+                                                  traj_ID,
+                                                  deltaT)
 
         self.assertIsNotNone(diffusion)
         # not sure what a better test would be for this...
@@ -139,18 +149,23 @@ class TestUtils_calc_diffusion(unittest.TestCase):
         result_columns = [3, 4]
         deltaT = 0.1  # exposure time, in seconds
 
-        traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
+        traj_xy, diffusion = utils.calc_diffusion(file_in,
+                                                  query_column,
+                                                  result_columns,
+                                                  traj_ID,
+                                                  deltaT)
 
-        self.assertEqual(len(diffusion),4)
+        self.assertEqual(len(diffusion), 4)
+
 
 class TestUtils_calc_dwelltime(unittest.TestCase):
     """
     Tests for calculating particle dwell times
     """
-    
+
     def test_calc_dwelltime_dataexists(self):
         # check that we can read in some data
-    
+
         # create some arbitrary xy coordinates (units in nm)
         some_xy = [['170.202', '22.481'],
                    ['169.726', '22.459'],
@@ -161,9 +176,12 @@ class TestUtils_calc_dwelltime(unittest.TestCase):
         frame_rate = 0.1  # in seconds
 
         # calc & print dwell time
-        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
+        dwell_time = utils.calc_dwelltime(some_xy,
+                                          max_disp,
+                                          min_bound_frames,
+                                          frame_rate)
         self.assertEqual(dwell_time, [4*frame_rate])
-        
+
         # can we handle tracks with multiple binding events?
         some_xy = [['3', '3'],
                    ['3', '4'],
@@ -182,9 +200,12 @@ class TestUtils_calc_dwelltime(unittest.TestCase):
         min_bound_frames = 2
         frame_rate = 0.1  # in seconds
 
-        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
-        self.assertEqual(dwell_time, [5*frame_rate, 4*frame_rate] )
-        
+        dwell_time = utils.calc_dwelltime(some_xy,
+                                          max_disp,
+                                          min_bound_frames,
+                                          frame_rate)
+        self.assertEqual(dwell_time, [5*frame_rate, 4*frame_rate])
+
         # can we handle no binding events?
         some_xy = [['3', '3'],
                    ['3', '40'],
@@ -203,8 +224,12 @@ class TestUtils_calc_dwelltime(unittest.TestCase):
         min_bound_frames = 2
         frame_rate = 0.1  # in seconds
 
-        dwell_time = utils.calc_dwelltime(some_xy, max_disp, min_bound_frames, frame_rate)
+        dwell_time = utils.calc_dwelltime(some_xy,
+                                          max_disp,
+                                          min_bound_frames,
+                                          frame_rate)
         self.assertEqual(dwell_time, [])
+
 
 class TestUtils_process_image(unittest.TestCase):
     '''
@@ -229,9 +254,9 @@ class TestUtils_process_image(unittest.TestCase):
         # check that features are being extracted
         # correctly from the processed tif stack
         file_in = 'out_processed.tif'
-        #get the frames to be processed as np arrays
+        # get the frames to be processed as np arrays
         processed_frames = utils.read_tif(file_in)
-        #shrink the test set for optimization
+        # shrink the test set for optimization
         frames = processed_frames[1:10]
         features = None
         # extract features will save a result.tif with keypoints
