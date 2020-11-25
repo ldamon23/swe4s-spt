@@ -14,6 +14,12 @@ TIF or ND2 (proprietary from NIS-Elements) movie with fluorescently labeled prot
 
 
 **Updates**
+
+* Week of 11/23/2020:
+ - generated function for calculating particle dwell time, and for getting particle xy coordinates
+ - updated testing to be more robust
+ - wrote scripts to plot diffusion and dwell time data
+ 
 * 11/09/2020
 - improved documentation and imports using guidance from project review and removed unused variables in the cv functions
 * 11/07/2020
