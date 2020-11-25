@@ -216,7 +216,7 @@ def calc_diffusion(file_in, query_column, result_columns,
 
     Parameters:
     file_in          : trajectory file to process
-    query_column     : column containing the trajectory IDS
+    query_column     : column containing the trajectory IDs
     result_columns   : columns containing the X and Y coordinates, respectively
     traj_ID          : trajectories to analyze. By default, all are analyzed
     delta_T          : exposure time, in seconds. By default, deltaT=0.1
@@ -407,3 +407,50 @@ def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
         dwell_times.append(dwell_time)
 
     return dwell_times
+
+def get_xy_coords(file_in, query_column, result_columns, traj_ID):
+    ''' Helper function for extracting a particle's XY coordinates
+    
+    With a given CSV file containing trajectory info, loop through all of the
+    tracks and extract their XY coordinates.
+    
+    Parameters:
+    file_in          : str
+                       trajectory file to process
+    query_column     : int
+                       column containing the trajectory IDs
+    result_columns   : int
+                       columns containing the X and Y coordinates, respectively
+    traj_ID          : int
+                       trajectory to analyze (note: unlike calc_diffusion, this
+                       only calls a signel trajectory at a time)
+
+    Outputs:
+    xy_coords          : list
+                         X & Y coordinates of the particle while it exists
+    '''
+
+    # check that the file exists
+    try:
+        traj_file = open(file_in, 'r') # open file with traj info
+    except:
+        print("Could not find file " + file_in)
+        sys.exit(1)
+
+    # begin analyzing trajectories
+    header = None
+    xy_coords = []
+    for line in traj_file:
+        if header is None:
+            header = line
+            continue
+        currLine = line.rstrip().split(',')
+        if currLine[query_column] == str(traj_ID):
+            data = []
+            for j in result_columns:
+                data.append(float(currLine[j]))
+            xy_coords.append(data)
+
+    traj_file.close()
+
+    return xy_coords
