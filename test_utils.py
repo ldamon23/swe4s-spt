@@ -267,7 +267,17 @@ class TestUtils_process_image(unittest.TestCase):
     Tests for the functionality of image processing
     Will test image processing and feature extraction
     '''
-
+    def setUp(self):
+        # create test files in case they are not yet created
+        file_in = 'sample_SPT.nd2'
+        file_out = 'sample_SPT.tif'
+        try:
+            file = open(file_out)
+        except FileNotFoundError:
+            utils.convert_ND2(file_in, file_out, 'all')
+            utils.process_image(file_out, blurIter=2)
+        file.close()
+        
     def test_image_processing(self):
         # check that process image is taking in a tif stack and
         # then processing and saving that tif stack
@@ -276,12 +286,14 @@ class TestUtils_process_image(unittest.TestCase):
         file_out = 'out_processed.tif'
         result = None
         result = utils.process_image(file_in, blurIter=2)
+        cv.waitKey(1000)  #wait for the file to be closed
         self.assertIsNotNone(result)
 
         file = open(file_out)
         self.assertIsNotNone(file)
         file.close()
 
+    def test_feature_extraction(self):
         # check that features are being extracted
         # correctly from the processed tif stack
         file_in = 'out_processed.tif'
