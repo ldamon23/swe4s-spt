@@ -145,7 +145,7 @@ def extract_features(data, out_name='out_features.tif'):
         keypoints = detector.detect(img8)
         out = frame
         for kp in keypoints:
-            results.append([i, kp.pt, kp.size])
+            results.append([i, kp.pt[0], kp.pt[1]])
             cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size), (255, 0 ,0), 2)
             out_frames.append(out)
         i = i + 1
