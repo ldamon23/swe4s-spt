@@ -1,14 +1,16 @@
-""" 
+"""
 Utilty functions for SPT project
 
 Functions include:
-convert_ND2()      - Conversion of ND2 files to tif stacks
-read_tif()               - Reading of tif stacks as a list of numpy arrays
-process_image()    - Processing of numpy arrays using computer vision
-extract_features()  - Extraction of signal features from numpy arrays
-write_csv()            - Writing custom CSV files given arrays of data
-calc_diffusion()     - Calculates diffusion coefficient
-                                 from extracted signal features
+convert_ND2()       : Conversion of ND2 files to tif stacks
+read_tif()          : Reading of tif stacks as a list of numpy arrays
+process_image()     : Processing of numpy arrays using computer vision
+extract_features()  : Extraction of signal features from numpy arrays
+write_csv()         : Writing custom CSV files given arrays of data
+calc_diffusion()    : Calculates diffusion coefficient from extracted signal
+                      features
+calc_dwelltime()    : Calculate dwell times of extracted signal features
+get_xy_coords()     : Get xy_coords of extracted signal features
 """
 
 import sys
@@ -18,6 +20,8 @@ import numpy as np
 import tifffile
 from PIL import Image
 import csv
+import math
+from scipy.spatial.distance import pdist, squareform
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -200,30 +204,38 @@ def write_csv(data, file_name='results.csv'):
             sys.exit(1)
 
 
-def calc_diffusion(file_in, file_out, query_column,
-                   result_columns, traj_ID='all', deltaT=0.1):
+def calc_diffusion(file_in, query_column, result_columns,
+                   traj_ID='all', deltaT=0.1):
     """ Calculate diffusion coefficients of particles
+    
+    Diffusion can be calculated using the simple equation:
+                            MSD = 4*D*deltaT
+    where D is the diffusion coeff and deltaT is the time delay between frames.
+    The MSD (mean squared displacement) describes how a particle traverses
+    through space. Note here that we're assuming 2D Brownian motion, and the MSD
+    would therefore be a straight line. We could get into more complicated
+    fitting, but for the sake of simplicity we'll just assume Brownian.
 
     Parameters:
     file_in          : trajectory file to process
-    file_out         : file to save (NOTE: currently unused; later version will save to csv)
-    query_column     : column containing the trajectory IDS
+    query_column     : column containing the trajectory IDs
     result_columns   : columns containing the X and Y coordinates, respectively
     traj_ID          : trajectories to analyze. By default, all are analyzed
     delta_T          : exposure time, in seconds. By default, deltaT=0.1
 
     Outputs:
-    dataOut          : X & Y coordinates of the particle for each frame it exists
-                       Note: This is likely unnecessary & may bog down processing; will likely
-                       edit to remove later
-    diffusion_coeffs : A list of lists containing the trajectory ID and its diffusion coefficient
+    dataOut          : X & Y coordinates of the particle while it exists
+                       Note: This may be unnecessary & may bog down processing;
+                       will likely edit to remove later
+    diffusion_coeffs : A list of lists containing the trajectory ID and its
+                       diffusion coefficient
 
     """
 
     # check that the file exists
     try:
         traj_file = open(file_in, 'r') # open file with traj info
-    except:
+    except FileNotFoundError:
         print("Could not find file " + file_in)
         sys.exit(1)
 
@@ -249,7 +261,7 @@ def calc_diffusion(file_in, file_out, query_column,
 
         dataOut = []
         for traj in np.nditer(all_trajs_unique):
-            traj_file.seek(0)  # reset file to the beginning! otherwise won't loop back
+            traj_file.seek(0)  # reset file to the beginning!
             for line in traj_file:
                 if header is None:
                     header = line
@@ -263,12 +275,7 @@ def calc_diffusion(file_in, file_out, query_column,
 
             # calculate mean squared displacement(MSD) for each trajectory:
 
-            # assuming 2D Brownian diffusion, we can simplify the equation to be:
-            # MSD = 4*D*deltaT
-            # where D is the diffusion coeff and deltaT is the time delay between frames
-
-            # first, transform dataOut to numpy array to make it easier to index (at least for me)
-            # I have a feeling this is a messy way to do it; so I'm open to suggestions on cleaning up!
+            # first, transform dataOut to numpy array to make it easier to index
 
             dataOut2 = np.array(dataOut)
             xdata = []
@@ -279,19 +286,15 @@ def calc_diffusion(file_in, file_out, query_column,
                 ydata.append(float(dataOut2[i,1]))
 
             # convert back to np array (can't do below math on a list)
-            xdata = np.array(xdata)/1000  # converting from nm to um (convention)
-            ydata = np.array(ydata)/1000  # converting from nm to um (convention)
+            xdata = np.array(xdata)/1000  # converting from nm to um
+            ydata = np.array(ydata)/1000  # converting from nm to um
             # now, calculate the displacements
             r = np.sqrt(xdata**2 + ydata**2)
-            diff = np.diff(r) #this calculates r(t + dt) - r(t)
+            diff = np.diff(r)  # this calculates r(t + dt) - r(t)
             diff_sq = diff**2
             MSD = np.mean(diff_sq)
 
             # diffusion can now be computed
-            # note: this is just the "average" diffusion throughout the length of the track
-            # as we're assuming it's Brownian motion (for simplicity). A better way would be to fit
-            # to a specific model of diffusion (anomolous/constrained, for instance).. 
-            # but for now, simplicity rules
             traj_diff = (MSD)/(4 * deltaT)  # final trajectory diffusion
 
             # append traj ID and diffusion coeff to final list
@@ -339,3 +342,121 @@ def calc_diffusion(file_in, file_out, query_column,
     traj_file.close()
 
     return dataOut, diffusion_coeffs
+
+
+def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
+    """ Calculate particle dwell time
+
+    Inputs:
+    ----
+    xy_data           : list
+                       list of xy coordinates for each particle
+    max_disp         : int
+                       maxium displacement a particle travels between frames
+    min_bound_frames : int
+                       minimum number of frames a particle can be bound for;
+                       removes spurrious binding events/false positives
+    frame_rate       : int
+                       time delay between each frame, in seconds.
+                       Defaults to 0.1 sec
+
+    Outputs:
+    ----
+    dwell_times     : int
+                      particle dwell time
+
+    """
+
+    bound_frames = []
+    curr_row = 0
+    done = False
+
+    # first, compute all displacements
+    all_displacements = squareform(pdist(xy_data))
+    # use a while loop to loop through the xydata
+    while done == False:
+        # find points that are less than the threshold distance
+        bound_states = []
+        for displacement in range(len(all_displacements)):
+            if all_displacements[displacement, curr_row] < max_disp:
+                state = 1  # particle is bound
+            else:
+                state = 0  # particle is unbound
+            bound_states.append(state)
+        bound_states = np.array(bound_states)
+
+        # get the index of the last unbound element;
+        # this allows us to compute how many frames the particle was bound
+        consec_ones = np.flatnonzero(bound_states == 1)
+        if len(consec_ones) > min_bound_frames:
+            is_bound = True
+            curr_row = len(consec_ones) + curr_row
+            bound_frames.append(consec_ones)
+        else:
+            curr_row = curr_row + 1
+
+        if curr_row >= len(xy_data):
+            done = True
+
+    # now, turn the length of the bound index into an actual dwell time
+    # first, convert bound_frames to array to use array indexing
+    # note - dtype argument removes numpy deprecation warning
+    bound_frames = np.array(bound_frames, dtype=object)
+
+    dwell_times = []
+    for event in range(len(bound_frames)):
+        dwell_time = frame_rate * len(bound_frames[event])
+        dwell_times.append(dwell_time)
+
+    if dwell_times == []:
+        return None
+
+    return dwell_times
+
+
+def get_xy_coords(file_in, query_column, result_columns, traj_ID):
+    ''' Helper function for extracting a particle's XY coordinates
+
+    With a given CSV file containing trajectory info, loop through all of the
+    tracks and extract their XY coordinates.
+
+    Parameters:
+    file_in          : str
+                       trajectory file to process
+    query_column     : int
+                       column containing the trajectory IDs
+    result_columns   : int
+                       columns containing the X and Y coordinates, respectively
+    traj_ID          : int
+                       trajectory to analyze (note: unlike calc_diffusion, this
+                       only calls a signel trajectory at a time)
+
+    Outputs:
+    xy_coords          : list
+                         X & Y coordinates of the particle while it exists
+    '''
+
+    # check that the file exists
+    try:
+        traj_file = open(file_in, 'r')  # open file with traj info
+    except FileNotFoundError:
+        print("Could not find file " + file_in)
+        sys.exit(1)
+
+    # begin analyzing trajectories
+    header = None
+    xy_coords = []
+    for line in traj_file:
+        if header is None:
+            header = line
+            continue
+        currLine = line.rstrip().split(',')
+        if currLine[query_column] == str(traj_ID):
+            data = []
+            for j in result_columns:
+                data.append(float(currLine[j]))
+            xy_coords.append(data)
+
+    traj_file.close()
+
+    return xy_coords

@@ -7,6 +7,9 @@ single particle trajectories
 
 import utils
 import argparse
+import csv
+import matplotlib.pyplot as plt
+import sys
 
 
 def main():
@@ -30,20 +33,48 @@ def main():
 
     args = parser.parse_args()
 
-    # convert file
+    # set-up
     file_in = args.file_in
-    file_out = file_in[:-4] + '_diffusion_coeffs.csv' # NOTE: currently not used
-    traj_ID = 'all'  # compute all diffusion coeffs
+    file_out = file_in[:-4] + '_diffusion_coeffs.csv'
+    traj_ID = 'all'  # compute all diffusion coeffs; default
     query_column = 1
     result_columns = [3, 4]
     deltaT = 0.1  # exposure time, in seconds
 
-    traj_xy, diffusion = utils.calc_diffusion(file_in, file_out, query_column, result_columns, traj_ID, deltaT)
+    traj_xy, diffusion = utils.calc_diffusion(file_in,
+                                              query_column,
+                                              result_columns,
+                                              traj_ID,
+                                              deltaT)
 
-    for i in diffusion:
-        print(diffusion)
-    
-    ## TO DO: plot histogram of trajectory
+    # write diffusion coeffs to CSV
+    field_names = ['Trajectory_ID', 'Diffusion_Coeff (um^2/s)']
+
+    with open(file_out, 'w') as csvfile:
+        # creating a csv writer object
+        csvwriter = csv.writer(csvfile)
+
+        # writing the fields and data
+        csvwriter.writerow(field_names)
+        csvwriter.writerows(diffusion)
+
+    # plot histogram of diffusion coeffs
+    hist_out_file = file_in[:-4] + '_diffusion_coeffs_hist.png'
+    # diffusion stored as list of lists; need to make array
+    diff_coeffs = [diff_coeff for ID, diff_coeff in diffusion]
+    width = 3
+    height = 3
+    fig = plt.figure(figsize=(width, height), dpi=300)
+
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.hist(diff_coeffs)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    plt.savefig(hist_out_file, bbox_inches='tight')
+
 
 if __name__ == '__main__':
 
