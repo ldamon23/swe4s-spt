@@ -197,6 +197,14 @@ class TestUtils_process_image(unittest.TestCase):
         self.assertIsNotNone(file)
         file.close()
 
-
+class TestUtils_track_linking(unittest.TestCase):
+    '''
+    Tests for the functionality of track linking
+    using process image output data
+    '''
+    def test_track_csv(self):
+    # check that track csv is working properly
+        utils.track_csv()
+    
 if __name__ == '__main__':
     unittest.main()
