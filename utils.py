@@ -20,13 +20,10 @@ import numpy as np
 import tifffile
 from PIL import Image
 import csv
-<<<<<<< HEAD
 import btrack
 from btrack.dataio import import_CSV
-=======
 import math
 from scipy.spatial.distance import pdist, squareform
->>>>>>> c4874f8635ae0cdb546e28b2b5406fd558108d51
 
 def convert_ND2(file_in, file_out, frame_range='all'):
     """ Because ND2s are a pain to work with, convert to TIF
@@ -139,7 +136,7 @@ def extract_features(data, out_name='out_features.tif'):
     if data is None:
         print('No data passed to detect features.')
         sys.exit(1)
-    results = []
+    results = [['t', 'x', 'y', 'z']]
     params = cv.SimpleBlobDetector_Params()
     params.minArea = 0
     params.maxArea = 10000
@@ -154,7 +151,7 @@ def extract_features(data, out_name='out_features.tif'):
         keypoints = detector.detect(img8)
         out = frame
         for kp in keypoints:
-            results.append([i, kp.pt[0], kp.pt[1], 0])
+            results.append([i, int(kp.pt[0]), int(kp.pt[1]), 0])
             cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size), (255, 0 ,0), 2)
             out_frames.append(out)
         i = i + 1
@@ -349,7 +346,6 @@ def calc_diffusion(file_in, query_column, result_columns,
     return dataOut, diffusion_coeffs
 
 
-<<<<<<< HEAD
 def track_csv(file_name='results.csv', out='track_results.csv'):
     # NOTE(arl): This should be from your image segmentation code
     objects = import_CSV(file_name)
@@ -364,7 +360,7 @@ def track_csv(file_name='results.csv', out='track_results.csv'):
       tracker.append(objects)
 
       # set the volume (Z axis volume is set very large for 2D data)
-      tracker.volume=((0,1200),(0,1600),(-1e5,1e5))
+      tracker.volume=((0,400),(0,400),(0,1))
 
       # track them (in interactive mode)
       tracker.track_interactive(step_size=100)
@@ -377,7 +373,8 @@ def track_csv(file_name='results.csv', out='track_results.csv'):
         
       # export tracks in CSV format
       btrack.dataio.export_CSV(out, tracks)
-=======
+
+
 def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
     """ Calculate particle dwell time
 
@@ -494,4 +491,3 @@ def get_xy_coords(file_in, query_column, result_columns, traj_ID):
     traj_file.close()
 
     return xy_coords
->>>>>>> c4874f8635ae0cdb546e28b2b5406fd558108d51
