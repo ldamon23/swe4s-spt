@@ -30,7 +30,11 @@ def main():
                         type=str,
                         required=True,
                         help="File to be processed")
-
+    parser.add_argument('--delta_T',
+                        dest='deltaT',
+                        type=str,
+                        required=True,
+                        help="Time delay between frames, in seconds")
     args = parser.parse_args()
 
     # set-up
@@ -39,7 +43,7 @@ def main():
     traj_ID = 'all'  # compute all diffusion coeffs; default
     query_column = 1
     result_columns = [3, 4]
-    deltaT = 0.1  # exposure time, in seconds
+    deltaT = args.deltaT  # exposure time, in seconds
 
     traj_xy, diffusion = utils.calc_diffusion(file_in,
                                               query_column,
