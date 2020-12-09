@@ -30,8 +30,8 @@ def main():
                         type=str,
                         required=True,
                         help="File to be processed")
-    parser.add_argument('--frame_rate',
-                        dest='frame_rate',
+    parser.add_argument('--delta_T',
+                        dest='deltaT',
                         type=float,
                         required=False,
                         help="Time between frames, in seconds")
@@ -51,7 +51,7 @@ def main():
     file_in = args.file_in
     query_column = 1  # column where trajectory IDs are located
     result_columns = [3, 4]  # columns where X & Y coords are located
-    frame_rate = args.frame_rate  # exposure time, in seconds
+    frame_rate = args.deltaT  # exposure time, in seconds
     min_bound_frames = args.min_bound_frames
     max_disp = args.max_disp
     file_out = file_in[:-4] + '_dwell_times.csv'
