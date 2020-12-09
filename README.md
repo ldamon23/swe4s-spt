@@ -56,8 +56,9 @@ Each will return a CSV file containing the trajectory ID and its diffusion coeff
 **Data Plotting**
 We have provided two scripts to faciltate plotting of particle diffusion coefficients and dwell times - `plot_diffusion.py` and `plot_dwelltime.py`.  These will return PNG files containing histograms of the data. 
 
-<img src="sample_outputs/sample_traj_diffusion_coeffs_hist.png", width="500"/>
-<img src="sample_outputs/sample_traj_dwell_times_hist.png", width="500"/>
+<img src="sample_outputs/sample_traj_diffusion_coeffs_hist.png" width="500"/>
+
+<img src="sample_outputs/sample_traj_dwell_times_hist.png" width="500"/>
 
 
 
