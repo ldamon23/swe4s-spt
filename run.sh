@@ -6,7 +6,7 @@ python get_diffusion.py --file sample_traj_crop.csv
  
 python get_diffusion.py --file sample_traj.csv # NOTE this one will take awhile
 
-# adding automated testing and pycodestyle verification
+# Automated testing and pycodestyle verification
 
 pycodestyle utils.py
 

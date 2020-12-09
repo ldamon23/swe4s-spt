@@ -152,8 +152,8 @@ def extract_features(data, out_name='out_features.tif'):
         out = frame
         for kp in keypoints:
             results.append([i, int(kp.pt[0]), int(kp.pt[1]), 0])
-            cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size), (255, 0 ,0), 2)
-            out_frames.append(out)
+            cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size/4), (255, 0 ,0), 2)
+        out_frames.append(out)
         i = i + 1
 
     with tifffile.TiffWriter(out_name) as tif:
