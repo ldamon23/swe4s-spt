@@ -9,6 +9,7 @@ before_install:
     - conda create --yes -n test_env
     - conda activate test_env
     - conda install --yes python=3.8.5
+    - conda install --yes pycodestyle
     - pip install -r requirements.txt
 
 script:
