@@ -19,6 +19,7 @@ hist_file_out  : str
 
 import csv
 import matplotlib.pyplot as plt
+import sys
 
 
 def main():
@@ -28,8 +29,8 @@ def main():
     """
 
     # set-up
-    dwell_file_in = 'sample_traj_dwell_times.csv'
-    hist_file_out = dwell_file_in[:-4] + '_hist2.png'
+    dwell_file_in = 'sample_outputs/sample_traj_dwell_times.csv'
+    hist_file_out = dwell_file_in[:-4] + '_hist.png'
 
     # read the file in
     try:

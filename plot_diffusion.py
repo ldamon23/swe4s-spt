@@ -19,6 +19,7 @@ hist_file_out:  str
 
 import csv
 import matplotlib.pyplot as plt
+import sys
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
     """
 
     # set-up
-    diff_file_in = 'sample_traj_diffusion_coeffs.csv'
+    diff_file_in = 'sample_outputs/sample_traj_diffusion_coeffs.csv'
     hist_file_out = diff_file_in[:-4] + '_hist.png'
 
     # read the file in
