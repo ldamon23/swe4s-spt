@@ -25,7 +25,8 @@ pip install -r requirements.txt
 **A note about ND2 Files:**
 
 If a user would like to analyze a ND2 file from Nikon Elements, it first must be converted to a TIF file using the script `convert_ND_to_TIF.py`. Usage of this is script is as follows:
-``` python convert_ND2_to_TIF.py --file sample_SPT.nd2
+``` 
+python convert_ND2_to_TIF.py --file sample_SPT.nd2
 ```
 The output of this will be a TIF stack of the same size (X, Y, Z, T) and same name, but with the `.tif` file extension
 
