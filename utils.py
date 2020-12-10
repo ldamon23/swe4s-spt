@@ -1,6 +1,11 @@
 """
 Utilty functions for SPT project
 
+Description:
+This file provides various functionality for analysis of time-lapse data 
+in the format of tif stacks. Conversion, extraction and analysis of raw data
+is enabled by computer vision, image processing, and data format libraries.
+
 Functions included:
 convert_ND2()       : Conversion of ND2 files to tif stacks
 calc_diffusion()      : Calculates diffusion coefficient from extracted features
