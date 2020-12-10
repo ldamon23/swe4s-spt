@@ -1,16 +1,17 @@
 """
 Utilty functions for SPT project
 
-Functions include:
+Functions included:
 convert_ND2()       : Conversion of ND2 files to tif stacks
-read_tif()          : Reading of tif stacks as a list of numpy arrays
-process_image()     : Processing of numpy arrays using computer vision
-extract_features()  : Extraction of signal features from numpy arrays
-write_csv()         : Writing custom CSV files given arrays of data
-calc_diffusion()    : Calculates diffusion coefficient from extracted signal
-                      features
+calc_diffusion()      : Calculates diffusion coefficient from extracted features
 calc_dwelltime()    : Calculate dwell times of extracted signal features
 get_xy_coords()     : Get xy_coords of extracted signal features
+process_image()     : Processes numpy arrays using opencv
+track_csv()             : Uses bayesian tracking package to analyze data
+extract_features()   : Extracts signal features from processed frames
+read_tif()                : Reads tif stacks and returns as a list of numpy arrays
+write_csv()             : Writes CSV files with given data
+
 """
 
 import sys
@@ -72,138 +73,6 @@ def convert_ND2(file_in, file_out, frame_range='all'):
     img.close()
 
     return output_img
-
-
-def process_image(file_name, blurIter=1, gBlur=True,
-                  out_name='out_processed.tif'):
-    '''Use image analysis algorithms to clean up signal from images
-
-    Requirements:
-    The image must be a tif stack as of now
-
-    Algorithms used:
-    Gaussian Blur -
-    Laplacian -
-
-    Definitions:
-    tif stack: A virtual stack of tagged image files (tif) images 
-                 : in this case it is likely to be a timeseries of fluorescence data
-
-    Parameters:
-    file_name    :string: Name of the file to be processed
-    blurIter    :integer: Number of iterations the gaussian blur should be applied
-    gBlur    :boolean: Decider for gaussian blur application
-
-    Outputs:
-    results    :List of numpy arrays (frames) extracted from the given video file
-    '''
-    results = []
-
-    try:
-        images = read_tif(file_name)
-        for i in range(len(images)):
-            img = images[i]
-            if gBlur:
-                img = cv.GaussianBlur(img, (5, 5), blurIter)
-            img = cv.Laplacian(img, cv.CV_64F)
-            img = np.uint16(np.absolute(img))  #convert back to 16bit to save as a readable tif stack
-            print('.', end='')
-            results.append(img)
-    except FileNotFoundError:
-        print("Could not find file " + file_name)
-        sys.exit(1)
-    finally:
-        with tifffile.TiffWriter(out_name) as tif:  # may want to refactor is used twice
-            for frame in results:
-                tif.save(frame, contiguous=True)
-
-
-    return results
-
-
-def extract_features(data, out_name='out_features.tif'):
-    '''
-    Ues opencv blob detection to find features from numpy arrays
-    
-    Inputs:
-    data - List of numpy arrays (frames)
-
-    Outputs:
-    results    :Array of arrays with structure as follows
-                (frame id, feature position(x, y), feature size)
-    
-    '''
-    if data is None:
-        print('No data passed to detect features.')
-        sys.exit(1)
-    results = [['t', 'x', 'y', 'z']]
-    params = cv.SimpleBlobDetector_Params()
-    params.minArea = 0
-    params.maxArea = 10000
-    detector = cv.SimpleBlobDetector_create(params)
-    i = 0
-    out_frames = []
-    for frame in data:
-        # Detect blobs by thresholding converting to 8bit and using cv blob detector.
-        # Ret is a return that is the threshold used.
-        ret, thresh = cv.threshold(frame, 5, 100, cv.THRESH_BINARY)
-        img8 = thresh.astype('uint8')
-        keypoints = detector.detect(img8)
-        out = frame
-        for kp in keypoints:
-            results.append([i, int(kp.pt[0]), int(kp.pt[1]), 0])
-            cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size/4), (255, 0 ,0), 2)
-        out_frames.append(out)
-        i = i + 1
-
-    with tifffile.TiffWriter(out_name) as tif:
-        for frame in out_frames:
-            tif.save(frame, contiguous=True)
-
-    return results
-
-
-def read_tif(path):
-    """
-    Read a tif stack and return numpy arrays
-    
-    Inputs:
-    path - :string: Path to the tif stack 
-    
-    Returns:
-    a numpy array of numpy arrays (tif stack frames)
-    
-    """
-    img = Image.open(path)
-    images = []
-    for i in range(img.n_frames):
-        img.seek(i)
-        images.append(np.array(img))
-
-    return np.array(images)
-
-
-def write_csv(data, file_name='results.csv'):
-    '''
-    Write a simple CSV file with given data and name
-    
-    Inputs:
-    data - :list of arrays: Contains row values
-    file_name - :string:  Output file name
-                        default - 'out/result.csv' 
-    
-    Output:
-    No return
-    Will write a CSV saving as file name with given data
-    '''
-    with open(file_name, mode='w') as csv_file:
-        try:
-            for row in data:
-                wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                wr.writerow(row)
-        except FileNotFoundError:
-            print('Could not open subdirectory \'out\'')
-            sys.exit(1)
 
 
 def calc_diffusion(file_in, query_column, result_columns,
@@ -346,35 +215,6 @@ def calc_diffusion(file_in, query_column, result_columns,
     return dataOut, diffusion_coeffs
 
 
-def track_csv(file_name='results.csv', out='track_results.csv'):
-    # NOTE(arl): This should be from your image segmentation code
-    objects = import_CSV(file_name)
-
-    # initialise a tracker session using a context manager
-    with btrack.BayesianTracker() as tracker:
-
-      # configure the tracker using a config file
-      tracker.configure_from_file('config_test.json')
-
-      # append the objects to be tracked
-      tracker.append(objects)
-
-      # set the volume (Z axis volume is set very large for 2D data)
-      tracker.volume=((0,400),(0,400),(0,1))
-
-      # track them (in interactive mode)
-      tracker.track_interactive(step_size=100)
-
-      # generate hypotheses and run the global optimizer
-      tracker.optimize()
-
-      # get the tracks as a python list
-      tracks = tracker.tracks
-        
-      # export tracks in CSV format
-      btrack.dataio.export_CSV(out, tracks)
-
-
 def calc_dwelltime(xy_data, max_disp, min_bound_frames, frame_rate=0.1):
     """ Calculate particle dwell time
 
@@ -491,3 +331,164 @@ def get_xy_coords(file_in, query_column, result_columns, traj_ID):
     traj_file.close()
 
     return xy_coords
+
+
+def process_image(file_name, blurIter=1, gBlur=True,
+                  out_name='out_processed.tif'):
+    '''Use image analysis algorithms to clean up signal from images
+
+    Requirements:
+    The image must be a tif stack as of now
+
+    Algorithms used:
+    Gaussian Blur -
+    Laplacian -
+
+    Definitions:
+    tif stack: A virtual stack of tagged image files (tif) images 
+                 : in this case it is likely to be a timeseries of fluorescence data
+
+    Parameters:
+    file_name    :string: Name of the file to be processed
+    blurIter    :integer: Number of iterations the gaussian blur should be applied
+    gBlur    :boolean: Decider for gaussian blur application
+
+    Outputs:
+    results    :List of numpy arrays (frames) extracted from the given video file
+    '''
+    results = []
+
+    try:
+        images = read_tif(file_name)
+        for i in range(len(images)):
+            img = images[i]
+            if gBlur:
+                img = cv.GaussianBlur(img, (5, 5), blurIter)
+            img = cv.Laplacian(img, cv.CV_64F)
+            img = np.uint16(np.absolute(img))  #convert back to 16bit to save as a readable tif stack
+            print('.', end='')
+            results.append(img)
+    except FileNotFoundError:
+        print("Could not find file " + file_name)
+        sys.exit(1)
+    finally:
+        with tifffile.TiffWriter(out_name) as tif:  # may want to refactor is used twice
+            for frame in results:
+                tif.save(frame, contiguous=True)
+
+
+    return results
+
+
+def extract_features(data, out_name='out_features.tif'):
+    '''
+    Ues opencv blob detection to find features from numpy arrays
+    
+    Inputs:
+    data - List of numpy arrays (frames)
+
+    Outputs:
+    results    :Array of arrays with structure as follows
+                (frame id, feature position(x, y), feature size)
+    
+    '''
+    if data is None:
+        print('No data passed to detect features.')
+        sys.exit(1)
+    results = [['t', 'x', 'y', 'z']]
+    params = cv.SimpleBlobDetector_Params()
+    params.minArea = 0
+    params.maxArea = 10000
+    detector = cv.SimpleBlobDetector_create(params)
+    i = 0
+    out_frames = []
+    for frame in data:
+        # Detect blobs by thresholding converting to 8bit and using cv blob detector.
+        # Ret is a return that is the threshold used.
+        ret, thresh = cv.threshold(frame, 5, 100, cv.THRESH_BINARY)
+        img8 = thresh.astype('uint8')
+        keypoints = detector.detect(img8)
+        out = frame
+        for kp in keypoints:
+            results.append([i, int(kp.pt[0]), int(kp.pt[1]), 0])
+            cv.circle(out, (int(kp.pt[0]), int(kp.pt[1])), int(kp.size/4), (255, 0 ,0), 2)
+        out_frames.append(out)
+        i = i + 1
+
+    with tifffile.TiffWriter(out_name) as tif:
+        for frame in out_frames:
+            tif.save(frame, contiguous=True)
+
+    return results
+
+
+def track_csv(file_name='results.csv', out='track_results.csv'):
+    # NOTE(arl): This should be from your image segmentation code
+    objects = import_CSV(file_name)
+
+    # initialise a tracker session using a context manager
+    with btrack.BayesianTracker() as tracker:
+
+      # configure the tracker using a config file
+      tracker.configure_from_file('config_test.json')
+
+      # append the objects to be tracked
+      tracker.append(objects)
+
+      # set the volume (Z axis volume is set very large for 2D data)
+      tracker.volume=((0,400),(0,400),(0,1))
+
+      # track them (in interactive mode)
+      tracker.track_interactive(step_size=100)
+
+      # generate hypotheses and run the global optimizer
+      tracker.optimize()
+
+      # get the tracks as a python list
+      tracks = tracker.tracks
+        
+      # export tracks in CSV format
+      btrack.dataio.export_CSV(out, tracks)
+
+
+def read_tif(path):
+    """
+    Read a tif stack and return numpy arrays
+    
+    Inputs:
+    path - :string: Path to the tif stack 
+    
+    Returns:
+    a numpy array of numpy arrays (tif stack frames)
+    
+    """
+    img = Image.open(path)
+    images = []
+    for i in range(img.n_frames):
+        img.seek(i)
+        images.append(np.array(img))
+
+    return np.array(images)
+
+
+def write_csv(data, file_name='results.csv'):
+    '''
+    Write a simple CSV file with given data and name
+    
+    Inputs:
+    data - :list of arrays: Contains row values
+    file_name - :string:  Output file name
+                        default - 'out/result.csv' 
+    
+    Output:
+    No return
+    Will write a CSV saving as file name with given data
+    '''
+    with open(file_name, mode='w') as csv_file:
+        try:
+            for row in data:
+                wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                wr.writerow(row)
+        except FileNotFoundError:
+            print('Could not open subdirectory \'out\'')
+            sys.exit(1)
